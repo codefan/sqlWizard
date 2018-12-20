@@ -1,19 +1,21 @@
 <template>
-  <Tabs label="sqlWizard" type="card">
+  <Tabs label="sqlWizard" type="card" style="height: 100vh;">
     <TabPane label="查询设计">
-      <Tabs type="card">
+      <Tabs type="card" style="height: 100vh;">
         <TabPane label="选择字段">
           <Layout>
-            <Sider hide-trigger>
+            <Sider style="background: #fff;" hide-trigger>
               <div>
-                <Tree :data="tableFields"></Tree>
+                <Tree
+                  @on-select-change="onTreeItemClick"
+                  :data="tableFields"></Tree>
               </div>
             </Sider>
             <Layout>
               <Content>
                 <Table border ref="selection" :columns="selectCols" :data="selectFields"></Table>
               </Content>
-              <Footer >
+              <Footer align="left">
                 数据处理函数
                 <Select style="width:200px">
                   <OptionGroup label="一般函数">
@@ -23,7 +25,7 @@
                     <Option v-for="item in statFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
                   </OptionGroup>
                 </Select>
-                <br/>
+                <br style="margin-bottom:15px;"/>
                     字段语句：
                     <Input prefix="ios-contact" placeholder="字段或者字段表达式" style="width: auto" />
                     别名：
@@ -71,8 +73,14 @@
 <script>
 export default {
   name: 'SqlWizard',
+  methods: {
+    onTreeItemClick (selectedItem, clickItem) {
+      console.log(selectedItem, clickItem)
+    }
+  },
   data () {
     return {
+      Default: 'default',
       tableFields: [
         {
           title: '主键',
