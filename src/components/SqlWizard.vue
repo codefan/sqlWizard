@@ -1,3 +1,4 @@
+/* eslint-disable */
 <template>
   <!--<Tabs label="sqlWizard" type="card" style="height: 100vh;">
     <TabPane label="查询设计">-->
@@ -15,23 +16,15 @@
             <Content>
               <Table border ref="selection" :columns="selectCols" :data="selectFields"
                      highlight-row
-                     @on-current-change="(selection) => selectedRows = selection"
+                     @on-current-change="(selection) => currSelectRows = selection"
                      @on-selection-change="(selection) => selectedRows = selection"
               ></Table>
-              {{selectedRows}}
             </Content>
             <Footer align="left">
-              数据处理: {{currentFieldOpt}}
+              数据处理:
               <br>
-              {{optFuncs}}
-              {{statFuncs}}
-              <Select style="width:200px" v-model="currentFieldOpt.optType" >
-                <!--<OptionGroup label="一般函数">-->
-                  <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
-                <!--</OptionGroup>-->
-                <!--<OptionGroup label="统计函数">-->
-                  <!--<Option v-for="item in statFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>-->
-                <!--</OptionGroup>-->
+              <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onSelectFieldChange" >
+                <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br style="margin-bottom:15px;"/>
                   字段语句：
@@ -53,34 +46,18 @@
                 </Button>
               </ButtonGroup>
               <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary">
+                <Button :size="Default" type="primary" @click="addSelectFieldEvent">
                   添加
                 </Button>
                 <Button :size="Default" type="primary">
                   修改
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="Default" type="primary" @click="deleteSelectFieldEvent">
                   删除
                 </Button>
               </ButtonGroup>
             </Footer>
           </Layout>
-        </Layout>
-      </TabPane>
-      <TabPane label="关联管理">
-        <Layout>
-          <Content>
-            <Table border :columns="tableCols" :data="selectTables"></Table>
-          </Content>
-          <Footer align="right">
-            表一：
-            <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" />
-            <Select style="width:200px" v-model="joinOpt.joinType" >
-              <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
-            </Select>
-            表二：
-            <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" />
-          </Footer>
         </Layout>
       </TabPane>
       <TabPane label="数据过滤">
@@ -99,15 +76,7 @@
             <Footer align="left">
               数据处理:
               <Select style="width:200px" v-model="filterFieldOpt.optType" >
-                <OptionGroup label="一般函数">
-                  <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
-                </OptionGroup>
-                <OptionGroup label="统计函数">
-                  <Option v-for="item in statFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
-                </OptionGroup>
-                <OptionGroup label="特殊操作">
-                  <Option value="fieldOpt">字段运算</Option>
-                </OptionGroup>
+                <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br style="margin-bottom:15px;"/>
               字段语句：
@@ -121,18 +90,18 @@
               </Select>
               <br/>
               数值：
-              <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" >
-                <Select slot="append" style="width: 70px">
-                  <Option v-for="item in sqlParams" :value="item.name" :key="item.code">{{ item.label }}</Option>
+              <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+                <Select style="width: 70px"> <!--slot="append"-->
+                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-              </Input>
+              <!--</Input>-->
               <br/>
               数值2(只有 逻辑为between 时才需要显示)：
-              <Input v-model="filterFieldOpt.logicParam2" placeholder="参数" style="width: auto" >
-                <Select slot="append" style="width: 70px">
-                  <Option v-for="item in sqlParams" :value="item.name" :key="item.code">{{ item.label }}</Option>
+              <Input v-model="filterFieldOpt.logicParam2" placeholder="参数" style="width: auto" />
+                <Select  style="width: 70px"> <!--slot="append"-->
+                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-              </Input>
+             <!-- </Input>-->
               <br/>
               <Button :size="Default" type="primary">
                 添加
@@ -166,6 +135,22 @@
           </Layout>
         </Layout>
       </TabPane>
+      <TabPane label="关联管理">
+        <Layout>
+          <Content>
+            <Table border :columns="tableCols" :data="selectTables"></Table>
+          </Content>
+          <Footer align="right">
+            表一：
+            <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" />
+            <Select style="width:200px" v-model="joinOpt.joinType" >
+              <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
+            </Select>
+            表二：
+            <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" />
+          </Footer>
+        </Layout>
+      </TabPane>
       <TabPane label="分组过滤">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
@@ -187,18 +172,18 @@
               </Select>
               <br/>
               数值：
-              <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" >
-                <Select slot="append" style="width: 70px">
-                  <Option v-for="item in sqlParams" :value="item.name" :key="item.code">{{ item.label }}</Option>
+              <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+                <Select style="width: 70px"> <!--slot="append"-->
+                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-              </Input>
+             <!-- </Input>-->
               <br/>
               数值2(只有 逻辑为between 时才需要显示)：
-              <Input v-model="havingFieldOpt.logicParam2" placeholder="参数" style="width: auto" >
-                <Select slot="append" style="width: 70px">
-                  <Option v-for="item in sqlParams" :value="item.name" :key="item.code">{{ item.label }}</Option>
+              <Input v-model="havingFieldOpt.logicParam2" placeholder="参数" style="width: auto" />
+                <Select style="width: 70px"> <!--slot="append"-->
+                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-              </Input>
+              <!--</Input>-->
               <br/>
               <Button :size="Default" type="primary">
                 添加
@@ -314,6 +299,74 @@ export default {
       this.currentFieldOpt.columnFormula = clickItem.column
       this.currentFieldOpt.columnName = clickItem.column
       this.currentFieldOpt.columnDesc = clickItem.title
+      this.currentFieldOpt.rawValue = clickItem.column
+      this.currentFieldOpt.rawDesc = clickItem.title
+      this.currentFieldOpt.isStat = false
+    },
+    onSelectFieldChange (item) {
+      // 需要一个标注输据库类型全局变量，根据不同的数据库拼接不同的函数
+      // this.currentFieldOpt.optType = item.value
+      if (this.currentFieldOpt.rawValue === '') {
+        return
+      }
+      this.currentFieldOpt.columnFormula = item.value + '(' + this.currentFieldOpt.rawValue + ')'
+      this.currentFieldOpt.columnDesc = '对 ' + this.currentFieldOpt.rawDesc + ' ' + item.label
+      for (let fun in this.optFuncs) {
+        if (item.value === fun.value) {
+          this.currentFieldOpt.isStat = fun.isStat
+          break
+        }
+      }
+    },
+    addSelectFieldEvent (event) {
+      if (this.currentFieldOpt.columnName === '') {
+        return
+      }
+      // 需要检查 this.currentFieldOpt.columnName 和列表中的别名有没有冲突，如果有冲突需要修改，否则不能添加
+      let cruField = {}
+      cruField.colFormula = this.currentFieldOpt.columnFormula
+      cruField.columnName = this.currentFieldOpt.columnName
+      cruField.columnDesc = this.currentFieldOpt.columnDesc
+      cruField.columnSql = this.currentFieldOpt.columnFormula
+      if (this.currentFieldOpt.optType === 'colOpt') {
+        // 1,2,3,4,5
+        let sqlPieces = cruField.columnSql.replace(/([+\-*/(),])/g, '@#$1@#').split('@#').filter(w => w)
+        let sqlSen = ''
+        for (let s in sqlPieces) {
+          if (/^\d+$/.test(sqlPieces[s].trim())) {
+            let i = Number(sqlPieces[s].trim())
+            if (i - 1 < this.selectFields.length) {
+              sqlSen += this.selectFields[i - 1].columnSql
+            } else {
+              sqlSen += sqlPieces[s]
+            }
+          } else {
+            sqlSen += sqlPieces[s]
+          }
+          // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
+        }
+        cruField.columnSql = sqlSen
+      }
+      cruField.isStat = this.currentFieldOpt.isStat
+      this.selectFields.push(cruField)
+
+      this.currentFieldOpt.optType = 'none'
+      this.currentFieldOpt.columnFormula = ''
+      this.currentFieldOpt.columnName = ''
+      this.currentFieldOpt.columnDesc = ''
+      this.currentFieldOpt.rawValue = ''
+      this.currentFieldOpt.rawDesc = ''
+      this.currentFieldOpt.isStat = false
+    },
+    deleteSelectFieldEvent (event) {
+      if (Object.keys(this.currSelectRows).length !== 0) {
+        for (let i = 0; i < this.selectFields.length; i++) {
+          if (this.currSelectRows.columnName === this.selectFields[i].columnName) {
+            this.selectFields.splice(i, 1)
+            break
+          }
+        }
+      }
     },
     // 过滤条件树 点击事件
     onTreeFilterClick (selectedItem, clickItem) {
@@ -324,6 +377,7 @@ export default {
   },
   data () {
     return {
+      currSelectRows: {},
       selectedRows: [],
       Default: 'default',
       filterSqlFormula: '',
@@ -339,7 +393,10 @@ export default {
         optType: 'none',
         columnFormula: '',
         columnName: '',
-        columnDesc: ''
+        columnDesc: '',
+        rawValue: '',
+        rawDesc: '',
+        isStat: false
       },
       sortOpt: {
         sortColumn: '',
@@ -504,37 +561,48 @@ export default {
       optFuncs: [
         {
           label: '无操作',
-          value: 'none'
+          value: 'none',
+          isStat: false
         },
         {
           label: '大写',
-          value: 'upperCase'
+          value: 'upperCase',
+          isStat: false
         },
         {
           label: '小写',
-          value: 'lowerCase'
+          value: 'lowerCase',
+          isStat: false
         },
         {
           label: '取整',
-          value: 'int'
+          value: 'int',
+          isStat: false
         },
         {
-          label: '字段运算',
-          value: 'colOpt'
-        }
-      ],
-      statFuncs: [
-        {
           label: '求和',
-          value: 'sum'
+          value: 'sum',
+          isStat: true
         },
         {
           label: '计数',
-          value: 'count'
+          value: 'count',
+          isStat: true
         },
         {
           label: '平均',
-          value: 'avg'
+          value: 'average',
+          isStat: true
+        },
+        {
+          label: '方差',
+          value: 'variance',
+          isStat: true
+        },
+        {
+          label: '字段运算',
+          value: 'colOpt',
+          isStat: false
         }
       ],
       tableCols: [
@@ -759,9 +827,14 @@ export default {
       ],
       sqlParams: [
         {
-          name: '参数',
+          name: '参数1',
           code: 'PRM_NO0',
           defaultValue: '100'
+        },
+        {
+          name: '参数2',
+          code: 'PRM_NO1',
+          defaultValue: '200'
         }
       ]
     } // end of return
