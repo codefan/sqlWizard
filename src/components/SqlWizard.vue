@@ -16,14 +16,14 @@
             <Content>
               <Table border ref="selection" :columns="selectCols" :data="selectFields"
                      highlight-row
-                     @on-current-change="(selection) => currSelectRows = selection"
+                     @on-current-change="onSelectFieldSelectEvent"
                      @on-selection-change="(selection) => selectedRows = selection"
               ></Table>
             </Content>
             <Footer align="left">
               数据处理:
               <br>
-              <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onSelectFieldChange" >
+              <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onCurrFieldFuncChangeEvent" >
                 <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br style="margin-bottom:15px;"/>
@@ -36,11 +36,11 @@
               <Input v-model="currentFieldOpt.columnDesc" placeholder="字段名称，一般用于标识字段内容" style="width: auto" />
               <br/>
               <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary">
+                <Button :size="Default" type="primary" @click="moveSelectFieldUpEvent">
                   <Icon type="ios-arrow-back" />
                   上移
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="Default" type="primary" @click="moveSelectFieldDownEvent">
                   下移
                   <Icon type="ios-arrow-forward" />
                 </Button>
@@ -49,7 +49,7 @@
                 <Button :size="Default" type="primary" @click="addSelectFieldEvent">
                   添加
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="Default" type="primary" @click="updateSelectFieldEvent">
                   修改
                 </Button>
                 <Button :size="Default" type="primary" @click="deleteSelectFieldEvent">
@@ -303,7 +303,7 @@ export default {
       this.currentFieldOpt.rawDesc = clickItem.title
       this.currentFieldOpt.isStat = false
     },
-    onSelectFieldChange (item) {
+    onCurrFieldFuncChangeEvent (item) {
       // 需要一个标注输据库类型全局变量，根据不同的数据库拼接不同的函数
       // this.currentFieldOpt.optType = item.value
       if (this.currentFieldOpt.rawValue === '') {
@@ -318,11 +318,18 @@ export default {
         }
       }
     },
-    addSelectFieldEvent (event) {
-      if (this.currentFieldOpt.columnName === '') {
-        return
-      }
-      // 需要检查 this.currentFieldOpt.columnName 和列表中的别名有没有冲突，如果有冲突需要修改，否则不能添加
+    onSelectFieldSelectEvent (item) {
+      this.currSelectRow = item
+      this.currentFieldOpt.optType = this.currSelectRow.optType || 'none'
+      this.currentFieldOpt.columnFormula = this.currSelectRow.colFormula
+      this.currentFieldOpt.columnName = this.currSelectRow.columnName
+      this.currentFieldOpt.columnDesc = this.currSelectRow.columnDesc
+      this.currentFieldOpt.rawValue = this.currSelectRow.colFormula
+      this.currentFieldOpt.rawDesc = this.currSelectRow.columnDesc
+      this.currentFieldOpt.isStat = this.currSelectRow.isStat
+    },
+
+    makeSelectFieldValue () {
       let cruField = {}
       cruField.colFormula = this.currentFieldOpt.columnFormula
       cruField.columnName = this.currentFieldOpt.columnName
@@ -348,8 +355,11 @@ export default {
         cruField.columnSql = sqlSen
       }
       cruField.isStat = this.currentFieldOpt.isStat
-      this.selectFields.push(cruField)
+      cruField.optType = this.currentFieldOpt.optType
+      return cruField
+    },
 
+    clearCurrentFieldOpt () {
       this.currentFieldOpt.optType = 'none'
       this.currentFieldOpt.columnFormula = ''
       this.currentFieldOpt.columnName = ''
@@ -358,14 +368,98 @@ export default {
       this.currentFieldOpt.rawDesc = ''
       this.currentFieldOpt.isStat = false
     },
-    deleteSelectFieldEvent (event) {
-      if (Object.keys(this.currSelectRows).length !== 0) {
+
+    addSelectFieldEvent (event) {
+      if (this.currentFieldOpt.columnName === '') {
+        return
+      }
+      // 需要检查 this.currentFieldOpt.columnName 和列表中的别名有没有冲突，如果有冲突需要修改，否则不能添加
+      for (let i = 0; i < this.selectFields.length; i++) {
+        if (this.currentFieldOpt.columnName === this.selectFields[i].columnName) {
+          this.$Message.error('字段别名重复，请修改 :' + this.currentFieldOpt.columnName)
+          return
+        }
+      }
+
+      let cruField = this.makeSelectFieldValue()
+      this.selectFields.push(cruField)
+      this.clearCurrentFieldOpt()
+    },
+
+    updateSelectFieldEvent (event) {
+      let ind = -1
+      if (this.currSelectRow) {
         for (let i = 0; i < this.selectFields.length; i++) {
-          if (this.currSelectRows.columnName === this.selectFields[i].columnName) {
+          if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
+            ind = i
+            break
+          }
+        }
+      }
+
+      if (ind < 0) {
+        return
+      }
+      for (let i = 0; i < this.selectFields.length; i++) {
+        if (i !== ind && this.currentFieldOpt.columnName === this.selectFields[i].columnName) {
+          this.$Message.error('字段别名重复，请修改 :' + this.currentFieldOpt.columnName)
+          return
+        }
+      }
+
+      let cruField = this.makeSelectFieldValue()
+      this.$set(this.selectFields, ind, cruField)
+      this.clearCurrentFieldOpt()
+      // 这一句 不起作用，奇怪
+      this.currSelectRow._highlight = true
+    },
+
+    deleteSelectFieldEvent (event) {
+      if (Object.keys(this.currSelectRow).length !== 0) {
+        for (let i = 0; i < this.selectFields.length; i++) {
+          if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
             this.selectFields.splice(i, 1)
             break
           }
         }
+      }
+    },
+    moveSelectFieldUpEvent (event) {
+      let ind = -1
+
+      if (this.currSelectRow) {
+        for (let i = 0; i < this.selectFields.length; i++) {
+          if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
+            ind = i
+            break
+          }
+        }
+      }
+
+      if (ind > 0) {
+        const temp = this.selectFields[ind - 1]
+        this.$set(this.selectFields, ind - 1, this.currSelectRow)
+        this.$set(this.selectFields, ind, temp)
+        this.currSelectRow._highlight = true
+      }
+    },
+    moveSelectFieldDownEvent (event) {
+      let ind = -1
+
+      if (this.currSelectRow) {
+        for (let i = 0; i < this.selectFields.length; i++) {
+          if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
+            ind = i
+            break
+          }
+        }
+      }
+
+      if (ind >= 0 && ind < this.selectFields.length - 1) {
+        const temp = this.selectFields[ind + 1]
+        this.$set(this.selectFields, ind + 1, this.currSelectRow)
+        this.$set(this.selectFields, ind, temp)
+        this.currSelectRow._highlight = true
       }
     },
     // 过滤条件树 点击事件
@@ -377,7 +471,7 @@ export default {
   },
   data () {
     return {
-      currSelectRows: {},
+      currSelectRow: {},
       selectedRows: [],
       Default: 'default',
       filterSqlFormula: '',
