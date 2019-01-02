@@ -25,6 +25,7 @@
               <br>
               <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onCurrFieldFuncChangeEvent" >
                 <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
+                <Option value="colOpt" key="colOpt">字段运算</Option>
               </Select>
               <br style="margin-bottom:15px;"/>
                   字段语句：
@@ -75,8 +76,8 @@
             </Content>
             <Footer align="left">
               数据处理:
-              <Select style="width:200px" v-model="filterFieldOpt.optType" >
-                <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
+              <Select style="width:200px" v-model="filterFieldOpt.optType" :label-in-value="true"  @on-change="onFilterFieldFuncChangeEvent">
+                <Option v-for="item in optFuncs" v-if="! item.isStat" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br style="margin-bottom:15px;"/>
               字段语句：
@@ -84,25 +85,29 @@
               字段描述：
               <Input v-model="filterFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
               <br/>
-              逻辑：
-              <Select style="width:200px" v-model="filterFieldOpt.filterLogic" >
+              逻辑 {{filterFieldOpt.filterLogic.params}}：
+              <Select style="width:200px" v-model="filterFieldOpt.filterLogic" :label-in-value="true"  @on-change="onFilterFieldLogicChangeEvent">
                 <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br/>
-              数值：
-              <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
-                <Select style="width: 70px"> <!--slot="append"-->
-                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
-                </Select>
-              <!--</Input>-->
-              <br/>
-              数值2(只有 逻辑为between 时才需要显示)：
-              <Input v-model="filterFieldOpt.logicParam2" placeholder="参数" style="width: auto" />
+              <div v-show="logicParamShow">
+                {{filterFieldOpt.filterLogic}}：
+                <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+                  <Select style="width: 70px"> <!--slot="append"-->
+                    <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                  </Select>
+                <!--</Input>-->
+              </div>
+
+              <div v-show="logicParam2Show">
+                and：
+                <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
                 <Select  style="width: 70px"> <!--slot="append"-->
                   <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-             <!-- </Input>-->
-              <br/>
+                <!-- </Input>-->
+              </div>
+
               <Button :size="Default" type="primary">
                 添加
               </Button>
@@ -311,12 +316,23 @@ export default {
       }
       this.currentFieldOpt.columnFormula = item.value + '(' + this.currentFieldOpt.rawValue + ')'
       this.currentFieldOpt.columnDesc = '对 ' + this.currentFieldOpt.rawDesc + ' ' + item.label
-      for (let fun in this.optFuncs) {
+      this.currentFieldOpt.isStat = false
+
+      this.optFuncs.forEach(fun => {
         if (item.value === fun.value) {
           this.currentFieldOpt.isStat = fun.isStat
-          break
+          return false
         }
-      }
+      })
+
+      // if (item.value) {
+      //   for (let fun in this.optFuncs) {
+      //     if (item.value === fun.value) {
+      //       this.currentFieldOpt.isStat = fun.isStat
+      //       break
+      //     }
+      //   }
+      // }
     },
     onSelectFieldSelectEvent (item) {
       this.currSelectRow = item
@@ -328,7 +344,6 @@ export default {
       this.currentFieldOpt.rawDesc = this.currSelectRow.columnDesc
       this.currentFieldOpt.isStat = this.currSelectRow.isStat
     },
-
     makeSelectFieldValue () {
       let cruField = {}
       cruField.colFormula = this.currentFieldOpt.columnFormula
@@ -358,7 +373,6 @@ export default {
       cruField.optType = this.currentFieldOpt.optType
       return cruField
     },
-
     clearCurrentFieldOpt () {
       this.currentFieldOpt.optType = 'none'
       this.currentFieldOpt.columnFormula = ''
@@ -368,7 +382,6 @@ export default {
       this.currentFieldOpt.rawDesc = ''
       this.currentFieldOpt.isStat = false
     },
-
     addSelectFieldEvent (event) {
       if (this.currentFieldOpt.columnName === '') {
         return
@@ -385,7 +398,6 @@ export default {
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
     },
-
     updateSelectFieldEvent (event) {
       let ind = -1
       if (this.currSelectRow) {
@@ -413,7 +425,6 @@ export default {
       // 这一句 不起作用，奇怪
       this.currSelectRow._highlight = true
     },
-
     deleteSelectFieldEvent (event) {
       if (Object.keys(this.currSelectRow).length !== 0) {
         for (let i = 0; i < this.selectFields.length; i++) {
@@ -465,12 +476,45 @@ export default {
     // 过滤条件树 点击事件
     onTreeFilterClick (selectedItem, clickItem) {
       this.filterFieldOpt.optType = 'none'
+      this.filterFieldOpt.rawValue = clickItem.column
       this.filterFieldOpt.fieldSql = clickItem.column
+      this.filterFieldOpt.rawDesc = clickItem.title
       this.filterFieldOpt.fieldDesc = clickItem.title
+    },
+    // 数据过滤页面 数据处理 选择
+    onFilterFieldFuncChangeEvent (item) {
+      // 需要一个标注输据库类型全局变量，根据不同的数据库拼接不同的函数
+      if (this.filterFieldOpt.rawValue === '') {
+        return
+      }
+      this.filterFieldOpt.fieldSql = item.value + '(' + this.filterFieldOpt.rawValue + ')'
+      this.filterFieldOpt.fieldDesc = '对 ' + this.filterFieldOpt.rawDesc + ' ' + item.label
+    },
+    onFilterFieldLogicChangeEvent (item) {
+      let params = 1
+
+      this.filterLogics.forEach(logic => {
+        if (item.value === logic.value) {
+          params = logic.params
+          return false
+        }
+      })
+      if (params === 0) {
+        this.logicParamShow = false
+        this.logicParam2Show = false
+      } else if (params === 2) {
+        this.logicParamShow = true
+        this.logicParam2Show = true
+      } else {
+        this.logicParamShow = true
+        this.logicParam2Show = false
+      }
     }
   },
   data () {
     return {
+      logicParamShow: false,
+      logicParam2Show: false,
       currSelectRow: {},
       selectedRows: [],
       Default: 'default',
@@ -692,11 +736,6 @@ export default {
           label: '方差',
           value: 'variance',
           isStat: true
-        },
-        {
-          label: '字段运算',
-          value: 'colOpt',
-          isStat: false
         }
       ],
       tableCols: [
@@ -823,7 +862,7 @@ export default {
         },
         {
           label: '包含于',
-          value: 'in (',
+          value: 'in()',
           params: 1
         },
         {
