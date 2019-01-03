@@ -389,19 +389,13 @@ export default {
               let tableLeft = this.getTableInfo(leftTab)
               tableTemp.leftTable = tableLeft.title
               tableTemp.leftTableCode = leftTab // tableLeft.table + ' ' + tableLeft.tableAlias
-              tableTemp.joinType = '内链接'
-              tableTemp.joinTypeSql = 'join'
+              tableTemp.joinType = tableTemp.joinType || '内链接'
+              tableTemp.joinTypeSql = tableTemp.joinTypeSql || 'join'
               tableTemp.rightTable = tableTemp.title
               tableTemp.rightTableCode = tableTemp.table + ' ' + tableTemp.tableAlias
               tempTables2.set(tempTab, tableTemp)
             }
           })
-        }
-      })
-      this.selectTables.forEach(tab => {
-        if (tempTables2.get(tab.tableAlias)) {
-          tempTables2.get(tab.tableAlias).joinType = tab.joinType
-          tempTables2.get(tab.tableAlias).joinTypeSql = tab.joinTypeSql
         }
       })
       let tableInfos = []
@@ -717,6 +711,7 @@ export default {
           if (this.joinOpt.rightTableCode === this.selectTables[i].rightTableCode) {
             this.selectTables[i].joinType = item.label
             this.selectTables[i].joinTypeSql = item.value
+            this.$set(this.selectTables, i, this.selectTables[i])
             this.joinOpt._highlight = true
             break
           }
@@ -831,12 +826,12 @@ export default {
               column: 'work_content'
             },
             {
-              title: '入学时间',
+              title: '入职时间',
               tableAlias: 'T_1',
               column: 'begin_date'
             },
             {
-              title: '毕业时间',
+              title: '离职时间',
               tableAlias: 'T_1',
               column: 'end_date'
             }
