@@ -35,24 +35,24 @@
               字段描述：
               <Input v-model="currentFieldOpt.columnDesc" placeholder="字段名称，一般用于标识字段内容" style="width: auto" />
               <br/>
-              <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary" @click="moveSelectFieldUpEvent">
+              <ButtonGroup :size="buttonSize">
+                <Button :size="buttonSize" type="primary" @click="moveSelectFieldUpEvent">
                   <Icon type="ios-arrow-back" />
                   上移
                 </Button>
-                <Button :size="Default" type="primary" @click="moveSelectFieldDownEvent">
+                <Button :size="buttonSize" type="primary" @click="moveSelectFieldDownEvent">
                   下移
                   <Icon type="ios-arrow-forward" />
                 </Button>
               </ButtonGroup>
-              <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary" @click="addSelectFieldEvent">
+              <ButtonGroup :size="buttonSize">
+                <Button :size="buttonSize" type="primary" @click="addSelectFieldEvent">
                   添加
                 </Button>
-                <Button :size="Default" type="primary" @click="updateSelectFieldEvent">
+                <Button :size="buttonSize" type="primary" @click="updateSelectFieldEvent">
                   修改
                 </Button>
-                <Button :size="Default" type="primary" @click="deleteSelectFieldEvent">
+                <Button :size="buttonSize" type="primary" @click="deleteSelectFieldEvent">
                   删除
                 </Button>
               </ButtonGroup>
@@ -110,32 +110,32 @@
                 <!-- </Input>-->
               </div>
 
-              <Button :size="Default" type="primary" @click="addFilterSqlEvent">
+              <Button :size="buttonSize" type="primary" @click="addFilterSqlEvent">
                 添加
               </Button>
-              <Button :size="Default" type="primary" @click="updateFilterSqlEvent">
+              <Button :size="buttonSize" type="primary" @click="updateFilterSqlEvent">
                 修改
               </Button>
-              <Button :size="Default" type="primary" @click="deleteFilterSqlEvent">
+              <Button :size="buttonSize" type="primary" @click="deleteFilterSqlEvent">
                 删除
               </Button>
               <br/>
               逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
               <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
               <!--<br/>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 并
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 或
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 （
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 ）
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 取反
               </Button>-->
             </Footer>
@@ -161,10 +161,10 @@
           </Footer>
         </Layout>
       </TabPane>
-      <TabPane label="分组过滤">
+      <TabPane label="分组过滤" :disabled="groupPaneDisable">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Table border ref="selection" :columns="haveSelectCols" :data="selectFields"></Table>
+            <Table border ref="selection" :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"></Table>
           </Sider>
           <Layout>
             <Content>
@@ -195,34 +195,18 @@
                 </Select>
               <!--</Input>-->
               <br/>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 添加
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 修改
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="buttonSize" type="primary">
                 删除
               </Button>
               <br/>
               逻辑表达式：
               <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
-              <br/>
-              <Button :size="Default" type="primary">
-                并
-              </Button>
-              <Button :size="Default" type="primary">
-                或
-              </Button>
-              <Button :size="Default" type="primary">
-                （
-              </Button>
-              <Button :size="Default" type="primary">
-                ）
-              </Button>
-              <Button :size="Default" type="primary">
-                取反
-              </Button>
             </Footer>
           </Layout>
         </Layout>
@@ -247,24 +231,24 @@
                 <Option value="desc">降序</Option>
               </Select>
               <br/>
-              <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary">
+              <ButtonGroup :size="buttonSize">
+                <Button :size="buttonSize" type="primary">
                   <Icon type="ios-arrow-back" />
                   上移
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="buttonSize" type="primary">
                   下移
                   <Icon type="ios-arrow-forward" />
                 </Button>
               </ButtonGroup>
-              <ButtonGroup :size="Default">
-                <Button :size="Default" type="primary">
+              <ButtonGroup :size="buttonSize">
+                <Button :size="buttonSize" type="primary">
                   添加
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="buttonSize" type="primary">
                   修改
                 </Button>
-                <Button :size="Default" type="primary">
+                <Button :size="buttonSize" type="primary">
                   删除
                 </Button>
               </ButtonGroup>
@@ -282,13 +266,13 @@
             <Input v-model="paramOpt.paramName" placeholder="参数内容描述" style="width: auto" />
             默认值：
             <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
-            <Button :size="Default" type="primary">
+            <Button :size="buttonSize" type="primary">
               添加
             </Button>
-            <Button :size="Default" type="primary">
+            <Button :size="buttonSize" type="primary">
               修改
             </Button>
-            <Button :size="Default" type="primary">
+            <Button :size="buttonSize" type="primary">
               删除
             </Button>
           </Footer>
@@ -354,9 +338,15 @@ export default {
       return tabInfo
     },
     calcFromTables () {
+      this.groupPaneDisable = true
       let tempTables = new Set()
+      this.selectFields.forEach(field => {
+        if (field.isStat) {
+          this.groupPaneDisable = false
+        }
+        tempTables.add(this.getTableInfo(field.tableAlias))
+      })
       this.filterFields.forEach(field => tempTables.add(this.getTableInfo(field.tableAlias)))
-      this.selectFields.forEach(field => tempTables.add(this.getTableInfo(field.tableAlias)))
       let topTable = ''
       tempTables.forEach(tab => {
         if (topTable === '') {
@@ -729,10 +719,11 @@ export default {
     return {
       logicParamShow: false,
       logicParam2Show: false,
+      groupPaneDisable: true,
       currSelectRow: {},
       currFilterRow: {},
       selectedRows: [],
-      Default: 'default',
+      buttonSize: 'default',
       filterSqlFormula: '',
       sqlSentence: {
         fieldsSql: '',
