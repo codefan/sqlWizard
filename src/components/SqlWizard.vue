@@ -13,10 +13,9 @@
           </Sider>
           <Layout>
             <Content>
-              <Table border ref="selection" :columns="selectCols" :data="selectFields"
+              <Table border ref="fieldSelection" :columns="selectCols" :data="selectFields"
                      highlight-row
                      @on-current-change="onSelectFieldSelectEvent"
-                     @on-selection-change="(selection) => selectedRows = selection"
               ></Table>
             </Content>
             <Footer align="left">
@@ -461,6 +460,7 @@ export default {
         }
       }
       let cruField = this.makeSelectFieldValue()
+      cruField._checked = true
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
       this.calcFromTables()
@@ -717,65 +717,9 @@ export default {
   },
   data () {
     return {
-      logicParamShow: false,
-      logicParam2Show: false,
-      groupPaneDisable: true,
-      currSelectRow: {},
-      currFilterRow: {},
-      selectedRows: [],
-      buttonSize: 'default',
-      filterSqlFormula: '',
-      sqlSentence: {
-        fieldsSql: '',
-        fromTableSql: '',
-        whereSql: '',
-        groupBySql: '',
-        havingSql: '',
-        orderBySql: ''
-      },
-      currentFieldOpt: {
-        optType: 'none',
-        columnFormula: '',
-        columnName: '',
-        columnDesc: '',
-        rawValue: '',
-        rawDesc: '',
-        isStat: false
-      },
-      sortOpt: {
-        sortColumn: '',
-        sortColumnDesc: '',
-        sortType: 'asc'
-      },
-      joinOpt: {
-        leftTable: '',
-        leftTableCode: '',
-        joinTypeSql: 'join',
-        rightTable: '',
-        rightTableCode: ''
-      },
-      filterFieldOpt: {
-        optType: 'none',
-        fieldSql: '',
-        fieldDesc: '',
-        filterLogic: '',
-        logicParam: '',
-        logicParam2: '',
-        logicParamSel: '',
-        logicParam2Sel: ''
-      },
-      havingFieldOpt: {
-        fieldSql: '',
-        fieldDesc: '',
-        filterLogic: '',
-        logicParam: '',
-        logicParam2: ''
-      },
-      paramOpt: {
-        paramName: '',
-        paramCode: '',
-        defaultValue: ''
-      },
+      // databaseType tableList tableFields 这三个属性需要从后台获取
+      // 其中 tableList tableFields 需要分布获取
+      databaseType: 'oracle',
       tableList: [
         {
           table: 'user_info',
@@ -890,6 +834,64 @@ export default {
           ]
         }
       ],
+      logicParamShow: false,
+      logicParam2Show: false,
+      groupPaneDisable: true,
+      currSelectRow: {},
+      currFilterRow: {},
+      buttonSize: 'default',
+      filterSqlFormula: '',
+      sqlSentence: {
+        fieldsSql: '',
+        fromTableSql: '',
+        whereSql: '',
+        groupBySql: '',
+        havingSql: '',
+        orderBySql: ''
+      },
+      currentFieldOpt: {
+        optType: 'none',
+        columnFormula: '',
+        columnName: '',
+        columnDesc: '',
+        rawValue: '',
+        rawDesc: '',
+        isStat: false
+      },
+      sortOpt: {
+        sortColumn: '',
+        sortColumnDesc: '',
+        sortType: 'asc'
+      },
+      joinOpt: {
+        leftTable: '',
+        leftTableCode: '',
+        joinTypeSql: 'join',
+        rightTable: '',
+        rightTableCode: ''
+      },
+      filterFieldOpt: {
+        optType: 'none',
+        fieldSql: '',
+        fieldDesc: '',
+        filterLogic: '',
+        logicParam: '',
+        logicParam2: '',
+        logicParamSel: '',
+        logicParam2Sel: ''
+      },
+      havingFieldOpt: {
+        fieldSql: '',
+        fieldDesc: '',
+        filterLogic: '',
+        logicParam: '',
+        logicParam2: ''
+      },
+      paramOpt: {
+        paramName: '',
+        paramCode: '',
+        defaultValue: ''
+      },
       haveSelectCols: [
         {
           title: '字段描述',
@@ -923,40 +925,7 @@ export default {
           key: 'columnSql'
         }
       ],
-      selectFields: [
-        {
-          colFormula: 'T.user_name',
-          columnName: 'user_name',
-          columnDesc: '用户姓名',
-          columnSql: 'T.user_name',
-          tableAlias: 'T',
-          isStat: false
-        },
-        {
-          colFormula: 'T_0.edu_record',
-          columnName: 'edu_record',
-          columnDesc: '学历',
-          columnSql: 'T_0.edu_record',
-          tableAlias: 'T_0',
-          isStat: false
-        },
-        {
-          colFormula: 'T_0.edu_school',
-          columnName: 'edu_school',
-          columnDesc: '学校',
-          columnSql: 'T_0.edu_school',
-          tableAlias: 'T_0',
-          isStat: true
-        },
-        {
-          colFormula: 'T_1.work_unit',
-          columnName: 'work_unit',
-          columnDesc: '工作单位',
-          columnSql: 'T_1.work_unit',
-          tableAlias: 'T_1',
-          isStat: true
-        }
-      ],
+      selectFields: [],
       optFuncs: [
         {
           label: '无操作',
@@ -1013,24 +982,7 @@ export default {
           key: 'rightTable'
         }
       ],
-      selectTables: [
-        {
-          leftTable: '',
-          joinType: '',
-          rightTable: '用户信息表',
-          leftTableCode: '',
-          joinTypeSql: '',
-          rightTableCode: 'USER_INFO T'
-        },
-        {
-          leftTable: '用户信息表',
-          joinType: '内链接',
-          rightTable: '用户工作表',
-          leftTableCode: 'USER_INFO T',
-          joinTypeSql: 'join',
-          rightTableCode: 'user_career T1'
-        }
-      ],
+      selectTables: [],
       joinTypes: [
         {
           label: '内联接',
@@ -1075,17 +1027,7 @@ export default {
           key: 'filterDesc'
         }
       ],
-      filterFields: [
-        {
-          filterNo: '1',
-          filterColumn: 'user_name',
-          filterLogic: '等于',
-          filterValue: '张三',
-          filterSql: 'T.user_name ="张三"',
-          filterDesc: '用户姓名 = 张三',
-          tableAlias: 'T'
-        }
-      ],
+      filterFields: [],
       filterLogics: [
         {
           label: '等于',
@@ -1179,16 +1121,7 @@ export default {
           key: 'filterDesc'
         }
       ],
-      havingFields: [
-        {
-          filterNo: '1',
-          filterColumn: 'sum(T.user_salary)',
-          filterLogic: '大于',
-          filterValue: '120000',
-          filterSql: 'sum(T.user_salary) > 120000',
-          filterDesc: '薪资 求和 大于 120000'
-        }
-      ],
+      havingFields: [],
       sortedCols: [
         {
           title: '字段描述',
@@ -1203,13 +1136,7 @@ export default {
           key: 'sortType'
         }
       ],
-      sortedFields: [
-        {
-          columnDesc: '用户姓名',
-          columnSql: 'T.user_name asc',
-          sortType: '升序'
-        }
-      ],
+      sortedFields: [],
       paramsCols: [
         {
           title: '参数描述',
