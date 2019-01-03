@@ -163,7 +163,7 @@
       <TabPane label="分组过滤" :disabled="groupPaneDisable">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Table border ref="selection" :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"></Table>
+            <Table border :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"></Table>
           </Sider>
           <Layout>
             <Content>
@@ -460,6 +460,7 @@ export default {
         }
       }
       let cruField = this.makeSelectFieldValue()
+      cruField.colNo = this.selectFields.length + 1
       cruField._checked = true
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
@@ -467,15 +468,16 @@ export default {
     },
     updateSelectFieldEvent (event) {
       let ind = -1
+      let checked = true
       if (this.currSelectRow) {
         for (let i = 0; i < this.selectFields.length; i++) {
           if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
             ind = i
+            checked = this.currSelectRow._checked
             break
           }
         }
       }
-
       if (ind < 0) {
         return
       }
@@ -485,8 +487,9 @@ export default {
           return
         }
       }
-
       let cruField = this.makeSelectFieldValue()
+      cruField.colNo = ind + 1
+      cruField._checked = checked
       this.$set(this.selectFields, ind, cruField)
       this.clearCurrentFieldOpt()
       // 这一句 不起作用，奇怪
@@ -495,11 +498,17 @@ export default {
     },
     deleteSelectFieldEvent (event) {
       if (Object.keys(this.currSelectRow).length !== 0) {
+        let ind = -1
         for (let i = 0; i < this.selectFields.length; i++) {
           if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
-            this.selectFields.splice(i, 1)
-            break
+            ind = i
           }
+          if (ind >= 0 && i > ind) {
+            this.selectFields[i].colNo = i
+          }
+        }
+        if (ind >= 0) {
+          this.selectFields.splice(ind, 1)
         }
       }
       this.calcFromTables()
@@ -846,6 +855,7 @@ export default {
       },
       selectFields: [
         {
+          colNo: 1,
           colFormula: 'T.user_name',
           columnName: 'user_name',
           columnDesc: '用户姓名',
@@ -930,8 +940,13 @@ export default {
       selectCols: [
         {
           type: 'selection',
-          width: 60,
+          width: 50,
           align: 'center'
+        },
+        {
+          title: '序',
+          key: 'colNo',
+          width: 50
         },
         {
           title: '字段表达式',
@@ -1027,8 +1042,9 @@ export default {
       ],
       filterCols: [
         {
-          title: '序号',
-          key: 'filterNo'
+          title: '序',
+          key: 'filterNo',
+          width: 50
         },
         {
           title: '字段代码',
