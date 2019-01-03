@@ -72,7 +72,10 @@
           </Sider>
           <Layout>
             <Content>
-              <Table border :columns="filterCols" :data="filterFields"></Table>
+              <Table border :columns="filterCols" :data="filterFields"
+                     highlight-row
+                     @on-current-change="(item) => this.currFilterRow = item"
+              ></Table>
             </Content>
             <Footer align="left">
               数据处理:
@@ -85,7 +88,7 @@
               字段描述：
               <Input v-model="filterFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
               <br/>
-              逻辑 {{filterFieldOpt.filterLogic.params}}：
+              逻辑：
               <Select style="width:200px" v-model="filterFieldOpt.filterLogic" :label-in-value="true"  @on-change="onFilterFieldLogicChangeEvent">
                 <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
@@ -93,7 +96,7 @@
               <div v-show="logicParamShow">
                 {{filterFieldOpt.filterLogic}}：
                 <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
-                  <Select style="width: 70px"> <!--slot="append"-->
+                  <Select v-model="filterFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onFilterParamChangeEvent"> <!--slot="append"-->
                     <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                   </Select>
                 <!--</Input>-->
@@ -102,25 +105,25 @@
               <div v-show="logicParam2Show">
                 and：
                 <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
-                <Select  style="width: 70px"> <!--slot="append"-->
+                <Select v-model="filterFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onFilterParam2ChangeEvent"> <!--slot="append"-->
                   <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
                 <!-- </Input>-->
               </div>
 
-              <Button :size="Default" type="primary">
+              <Button :size="Default" type="primary" @click="addFilterSqlEvent">
                 添加
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="Default" type="primary" @click="updateFilterSqlEvent">
                 修改
               </Button>
-              <Button :size="Default" type="primary">
+              <Button :size="Default" type="primary" @click="deleteFilterSqlEvent">
                 删除
               </Button>
               <br/>
               逻辑表达式：
               <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
-              <br/>
+              <!--<br/>
               <Button :size="Default" type="primary">
                 并
               </Button>
@@ -135,7 +138,7 @@
               </Button>
               <Button :size="Default" type="primary">
                 取反
-              </Button>
+              </Button>-->
             </Footer>
           </Layout>
         </Layout>
@@ -324,15 +327,6 @@ export default {
           return false
         }
       })
-
-      // if (item.value) {
-      //   for (let fun in this.optFuncs) {
-      //     if (item.value === fun.value) {
-      //       this.currentFieldOpt.isStat = fun.isStat
-      //       break
-      //     }
-      //   }
-      // }
     },
     onSelectFieldSelectEvent (item) {
       this.currSelectRow = item
@@ -393,7 +387,6 @@ export default {
           return
         }
       }
-
       let cruField = this.makeSelectFieldValue()
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
@@ -491,23 +484,117 @@ export default {
       this.filterFieldOpt.fieldDesc = '对 ' + this.filterFieldOpt.rawDesc + ' ' + item.label
     },
     onFilterFieldLogicChangeEvent (item) {
-      let params = 1
+      if (item !== undefined) {
+        let params = 1
+        this.filterFieldOpt.logicDesc = item.label
+        this.filterLogics.forEach(logic => {
+          if (item.value === logic.value) {
+            params = logic.params
+            return false
+          }
+        })
+        if (params === 0) {
+          this.logicParamShow = false
+          this.logicParam2Show = false
+        } else if (params === 2) {
+          this.logicParamShow = true
+          this.logicParam2Show = true
+        } else {
+          this.logicParamShow = true
+          this.logicParam2Show = false
+        }
+      }
+    },
+    onFilterParamChangeEvent (item) {
+      if (item !== undefined) {
+        this.filterFieldOpt.logicParam = ':' + item.value
+        this.filterFieldOpt.logicParamDesc = item.label
+      }
+    },
+    onFilterParam2ChangeEvent (item) {
+      if (item !== undefined) {
+        this.filterFieldOpt.logicParam2 = ':' + item.value
+        this.filterFieldOpt.logicParam2Desc = item.label
+      }
+    },
+    makeFilterSqlValue () {
+      let cruFilter = {}
+      cruFilter.legal = this.filterFieldOpt.fieldSql && this.filterFieldOpt.filterLogic
+      cruFilter.filterColumn = this.filterFieldOpt.fieldSql
+      cruFilter.filterLogic = this.filterFieldOpt.logicDesc
+      cruFilter.filterValue = this.filterFieldOpt.logicParamDesc || this.filterFieldOpt.logicParam
+      if (this.filterFieldOpt.logicParam2) {
+        cruFilter.filterValue += ',' + (this.filterFieldOpt.logicParam2Desc || this.filterFieldOpt.logicParam2)
+      }
 
+      let params = 1
       this.filterLogics.forEach(logic => {
-        if (item.value === logic.value) {
+        if (this.filterFieldOpt.filterLogic === logic.value) {
           params = logic.params
           return false
         }
       })
       if (params === 0) {
-        this.logicParamShow = false
-        this.logicParam2Show = false
-      } else if (params === 2) {
-        this.logicParamShow = true
-        this.logicParam2Show = true
+        cruFilter.filterValue = '--'
+        cruFilter.filterSql = this.filterFieldOpt.fieldSql + this.filterFieldOpt.filterLogic
+        cruFilter.filterDesc = this.filterFieldOpt.fieldDesc + this.filterFieldOpt.logicDesc
+      } else if (params === 2) { // 目前只有 between
+        if (!this.filterFieldOpt.logicParam || !this.filterFieldOpt.logicParam2) {
+          cruFilter.legal = false
+        }
+        cruFilter.filterSql = this.filterFieldOpt.fieldSql + ' between ' + this.filterFieldOpt.logicParam + ' and ' + this.filterFieldOpt.logicParam2
+        cruFilter.filterDesc = this.filterFieldOpt.fieldDesc + ' 介于 ' + (this.filterFieldOpt.logicParamDesc || this.filterFieldOpt.logicParam) +
+          ' 和 ' + (this.filterFieldOpt.logicParam2Desc || this.filterFieldOpt.logicParam2) + ' 之间'
       } else {
-        this.logicParamShow = true
-        this.logicParam2Show = false
+        if (!this.filterFieldOpt.logicParam) {
+          cruFilter.legal = false
+        }
+        if (this.filterFieldOpt.filterLogic === 'in()') {
+          cruFilter.filterSql = this.filterFieldOpt.fieldSql + ' in (' + this.filterFieldOpt.logicParam + ')'
+        } else {
+          cruFilter.filterSql = this.filterFieldOpt.fieldSql + this.filterFieldOpt.filterLogic + this.filterFieldOpt.logicParam
+        }
+        cruFilter.filterDesc = this.filterFieldOpt.fieldDesc + this.filterFieldOpt.logicDesc + (this.filterFieldOpt.logicParamDesc || this.filterFieldOpt.logicParam)
+      }
+      return cruFilter
+    },
+    clearCurrentFilterOpt () {
+      this.filterFieldOpt.optType = 'none'
+      this.filterFieldOpt.fieldSql = ''
+      this.filterFieldOpt.filterLogic = ''
+      this.filterFieldOpt.logicParam = ''
+      this.filterFieldOpt.logicParam2 = ''
+      this.filterFieldOpt.logicParamSel = ''
+      this.filterFieldOpt.logicParam2Sel = ''
+      this.filterFieldOpt.fieldDesc = ''
+    },
+    addFilterSqlEvent (event) {
+      let cruFilter = this.makeFilterSqlValue()
+      cruFilter.filterNo = this.filterFields.length + 1
+      if (cruFilter.legal) {
+        this.filterFields.push(cruFilter)
+        this.clearCurrentFilterOpt()
+        if (this.filterSqlFormula) {
+          this.filterSqlFormula += ' + '
+        }
+        this.filterSqlFormula += cruFilter.filterNo
+      }
+    },
+    updateFilterSqlEvent (event) {
+      let ind = this.currFilterRow.filterNo
+      let cruFilter = this.makeFilterSqlValue()
+      if (cruFilter.legal) {
+        cruFilter.filterNo = ind
+        this.$set(this.filterFields, ind - 1, cruFilter)
+        this.currFilterRow._highlight = true
+      }
+    },
+    deleteFilterSqlEvent (event) {
+      if (Object.keys(this.currFilterRow).length !== 0) {
+        for (let i = this.currFilterRow.filterNo; i < this.filterFields.length; i++) {
+          this.filterFields[i].filterNo = i
+        }
+        this.filterFields.splice(this.currFilterRow.filterNo - 1, 1)
       }
     }
   },
@@ -516,6 +603,7 @@ export default {
       logicParamShow: false,
       logicParam2Show: false,
       currSelectRow: {},
+      currFilterRow: {},
       selectedRows: [],
       Default: 'default',
       filterSqlFormula: '',
@@ -552,7 +640,9 @@ export default {
         fieldDesc: '',
         filterLogic: '',
         logicParam: '',
-        logicParam2: ''
+        logicParam2: '',
+        logicParamSel: '',
+        logicParam2Sel: ''
       },
       havingFieldOpt: {
         fieldSql: '',
