@@ -145,12 +145,15 @@
       <TabPane label="关联管理">
         <Layout>
           <Content>
-            <Table border :columns="tableCols" :data="selectTables"></Table>
+            <Table border :columns="tableCols" :data="selectTables"
+                   highlight-row
+                   @on-current-change="(item) => this.joinOpt = item"
+            ></Table>
           </Content>
           <Footer align="right">
             表一：
             <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" />
-            <Select style="width:200px" v-model="joinOpt.joinType" >
+            <Select style="width:200px" v-model="joinOpt.joinTypeSql" :label-in-value="true" @on-change="onJoinTypeChangeEvent">
               <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
             </Select>
             表二：
@@ -708,6 +711,18 @@ export default {
         this.filterSqlFormula = sqlSen
         this.calcFromTables()
       }
+    },
+    onJoinTypeChangeEvent (item) {
+      if (this.joinOpt && this.joinOpt.leftTable) {
+        for (let i = 0; i < this.selectTables.length; i++) {
+          if (this.joinOpt.rightTableCode === this.selectTables[i].rightTableCode) {
+            this.selectTables[i].joinType = item.label
+            this.selectTables[i].joinTypeSql = item.value
+            this.joinOpt._highlight = true
+            break
+          }
+        }
+      }
     }
   },
   data () {
@@ -743,8 +758,10 @@ export default {
       },
       joinOpt: {
         leftTable: '',
-        joinType: 'join',
-        rightTable: ''
+        leftTableCode: '',
+        joinTypeSql: 'join',
+        rightTable: '',
+        rightTableCode: ''
       },
       filterFieldOpt: {
         optType: 'none',
