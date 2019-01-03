@@ -1,4 +1,3 @@
-/* eslint-disable */
 <template>
   <!--<Tabs label="sqlWizard" type="card" style="height: 100vh;">
     <TabPane label="查询设计">-->
@@ -303,13 +302,16 @@ export default {
   name: 'SqlWizard',
   methods: {
     onTreeItemClick (selectedItem, clickItem) {
-      this.currentFieldOpt.optType = 'none'
-      this.currentFieldOpt.columnFormula = clickItem.column
-      this.currentFieldOpt.columnName = clickItem.column
-      this.currentFieldOpt.columnDesc = clickItem.title
-      this.currentFieldOpt.rawValue = clickItem.column
-      this.currentFieldOpt.rawDesc = clickItem.title
-      this.currentFieldOpt.isStat = false
+      if (clickItem.column) {
+        this.currentFieldOpt.optType = 'none'
+        this.currentFieldOpt.columnFormula = clickItem.tableAlias + '.' + clickItem.column
+        this.currentFieldOpt.columnName = clickItem.column
+        this.currentFieldOpt.columnDesc = clickItem.title
+        this.currentFieldOpt.rawValue = clickItem.tableAlias + '.' + clickItem.column
+        this.currentFieldOpt.rawDesc = clickItem.title
+        this.currentFieldOpt.tableAlias = clickItem.tableAlias
+        this.currentFieldOpt.isStat = false
+      }
     },
     onCurrFieldFuncChangeEvent (item) {
       // 需要一个标注输据库类型全局变量，根据不同的数据库拼接不同的函数
@@ -338,12 +340,90 @@ export default {
       this.currentFieldOpt.rawDesc = this.currSelectRow.columnDesc
       this.currentFieldOpt.isStat = this.currSelectRow.isStat
     },
+    getTableInfo (tableAlias) {
+      let tabInfo = {}
+      this.tableList.forEach(tab => {
+        if (tableAlias === tab.tableAlias) {
+          tabInfo = tab
+          return false
+        }
+      })
+      return tabInfo
+    },
+    calcFromTables () {
+      let tempTables = new Set()
+      this.filterFields.forEach(field => tempTables.add(this.getTableInfo(field.tableAlias)))
+      this.selectFields.forEach(field => tempTables.add(this.getTableInfo(field.tableAlias)))
+      let topTable = ''
+      tempTables.forEach(tab => {
+        if (topTable === '') {
+          topTable = tab.tableAlias
+        } else {
+          let len = 0
+          for (let i = 0; i < topTable.length && i < tab.tableAlias.length; i++) {
+            if (topTable.charCodeAt(i) === tab.tableAlias.charCodeAt(i)) {
+              len++
+            } else {
+              break
+            }
+          }
+          topTable = topTable.substr(0, len)
+        }
+      })
+      if (topTable.endsWith('_')) {
+        topTable = topTable.substr(0, topTable.length - 1)
+      }
+      let topTableLen = topTable.length + 1
+      let tempTables2 = new Map()
+      let tableT = this.getTableInfo(topTable)
+
+      tableT.leftTable = ''
+      tableT.leftTableCode = ''
+      tableT.joinType = ''
+      tableT.joinTypeSql = ''
+      tableT.rightTable = tableT.title
+      tableT.rightTableCode = tableT.table + ' ' + tableT.tableAlias
+
+      tempTables2.set(topTable, tableT)
+      tempTables.forEach(tab => {
+        if (tab.tableAlias !== topTable) {
+          let pads = tab.tableAlias.substr(topTableLen).split('_')
+          let tempTab = topTable
+          pads.forEach(t => {
+            let leftTab = tempTab
+            tempTab = tempTab + '_' + t
+            if (!tempTables2.get(tempTab)) {
+              let tableTemp = this.getTableInfo(tempTab)
+              let tableLeft = this.getTableInfo(leftTab)
+              tableTemp.leftTable = tableLeft.title
+              tableTemp.leftTableCode = leftTab // tableLeft.table + ' ' + tableLeft.tableAlias
+              tableTemp.joinType = '内链接'
+              tableTemp.joinTypeSql = 'join'
+              tableTemp.rightTable = tableTemp.title
+              tableTemp.rightTableCode = tableTemp.table + ' ' + tableTemp.tableAlias
+              tempTables2.set(tempTab, tableTemp)
+            }
+          })
+        }
+      })
+      this.selectTables.forEach(tab => {
+        if (tempTables2.get(tab.tableAlias)) {
+          tempTables2.get(tab.tableAlias).joinType = tab.joinType
+          tempTables2.get(tab.tableAlias).joinTypeSql = tab.joinTypeSql
+        }
+      })
+      let tableInfos = []
+      tempTables2.forEach((value) => tableInfos.push(value))
+      tableInfos.sort((a, b) => a.tableAlias > b.tableAlias ? 1 : -1)
+      this.selectTables = tableInfos
+    },
     makeSelectFieldValue () {
       let cruField = {}
       cruField.colFormula = this.currentFieldOpt.columnFormula
       cruField.columnName = this.currentFieldOpt.columnName
       cruField.columnDesc = this.currentFieldOpt.columnDesc
       cruField.columnSql = this.currentFieldOpt.columnFormula
+      cruField.tableAlias = this.currentFieldOpt.tableAlias
       if (this.currentFieldOpt.optType === 'colOpt') {
         // 1,2,3,4,5
         let sqlPieces = cruField.columnSql.replace(/([+\-*/(),])/g, '@#$1@#').split('@#').filter(w => w)
@@ -390,6 +470,7 @@ export default {
       let cruField = this.makeSelectFieldValue()
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
+      this.calcFromTables()
     },
     updateSelectFieldEvent (event) {
       let ind = -1
@@ -417,6 +498,7 @@ export default {
       this.clearCurrentFieldOpt()
       // 这一句 不起作用，奇怪
       this.currSelectRow._highlight = true
+      this.calcFromTables()
     },
     deleteSelectFieldEvent (event) {
       if (Object.keys(this.currSelectRow).length !== 0) {
@@ -427,6 +509,7 @@ export default {
           }
         }
       }
+      this.calcFromTables()
     },
     moveSelectFieldUpEvent (event) {
       let ind = -1
@@ -468,11 +551,14 @@ export default {
     },
     // 过滤条件树 点击事件
     onTreeFilterClick (selectedItem, clickItem) {
-      this.filterFieldOpt.optType = 'none'
-      this.filterFieldOpt.rawValue = clickItem.column
-      this.filterFieldOpt.fieldSql = clickItem.column
-      this.filterFieldOpt.rawDesc = clickItem.title
-      this.filterFieldOpt.fieldDesc = clickItem.title
+      if (clickItem.column) {
+        this.filterFieldOpt.optType = 'none'
+        this.filterFieldOpt.rawValue = clickItem.tableAlias + '.' + clickItem.column
+        this.filterFieldOpt.fieldSql = clickItem.tableAlias + '.' + clickItem.column
+        this.filterFieldOpt.rawDesc = clickItem.title
+        this.filterFieldOpt.fieldDesc = clickItem.title
+        this.filterFieldOpt.tableAlias = clickItem.tableAlias
+      }
     },
     // 数据过滤页面 数据处理 选择
     onFilterFieldFuncChangeEvent (item) {
@@ -521,6 +607,7 @@ export default {
       let cruFilter = {}
       cruFilter.legal = this.filterFieldOpt.fieldSql && this.filterFieldOpt.filterLogic
       cruFilter.filterColumn = this.filterFieldOpt.fieldSql
+      cruFilter.tableAlias = this.filterFieldOpt.tableAlias
       cruFilter.filterLogic = this.filterFieldOpt.logicDesc
       cruFilter.filterValue = this.filterFieldOpt.logicParamDesc || this.filterFieldOpt.logicParam
       if (this.filterFieldOpt.logicParam2) {
@@ -578,6 +665,7 @@ export default {
         }
         this.filterSqlFormula += cruFilter.filterNo
         this.clearCurrentFilterOpt()
+        this.calcFromTables()
       }
     },
     updateFilterSqlEvent (event) {
@@ -588,6 +676,7 @@ export default {
         this.$set(this.filterFields, ind - 1, cruFilter)
         this.currFilterRow._highlight = true
         this.clearCurrentFilterOpt()
+        this.calcFromTables()
       }
     },
     deleteFilterSqlEvent (event) {
@@ -596,28 +685,29 @@ export default {
           this.filterFields[i].filterNo = i
         }
         this.filterFields.splice(this.currFilterRow.filterNo - 1, 1)
-      }
-      let sqlPieces = this.filterSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
-      let sqlSen = ''
-      for (let s in sqlPieces) {
-        if (sqlSen) {
-          sqlSen += ' '
-        }
-        if (/^\d+$/.test(sqlPieces[s].trim())) {
-          let i = Number(sqlPieces[s].trim())
-          if (i > this.currFilterRow.filterNo) {
-            sqlSen += (i - 1)
-          } else if (i === this.currFilterRow.filterNo) {
-            sqlSen += '0'
+        let sqlPieces = this.filterSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+        let sqlSen = ''
+        for (let s in sqlPieces) {
+          if (sqlSen) {
+            sqlSen += ' '
+          }
+          if (/^\d+$/.test(sqlPieces[s].trim())) {
+            let i = Number(sqlPieces[s].trim())
+            if (i > this.currFilterRow.filterNo) {
+              sqlSen += (i - 1)
+            } else if (i === this.currFilterRow.filterNo) {
+              sqlSen += '0'
+            } else {
+              sqlSen += sqlPieces[s]
+            }
           } else {
             sqlSen += sqlPieces[s]
           }
-        } else {
-          sqlSen += sqlPieces[s]
+          // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
         }
-        // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
+        this.filterSqlFormula = sqlSen
+        this.calcFromTables()
       }
-      this.filterSqlFormula = sqlSen
     }
   },
   data () {
@@ -678,68 +768,115 @@ export default {
         paramCode: '',
         defaultValue: ''
       },
+      tableList: [
+        {
+          table: 'user_info',
+          tableAlias: 'T',
+          title: '用户信息表'
+        },
+        {
+          title: '教育经历',
+          table: 'user_educations',
+          tableAlias: 'T_0',
+          joinColumns: [
+            {
+              leftColumn: 'user_code',
+              rightColumn: 'user_code'
+            }
+          ]
+        },
+        {
+          title: '工作经历',
+          table: 'user_career',
+          tableAlias: 'T_1',
+          joinColumns: [
+            {
+              leftColumn: 'user_code',
+              rightColumn: 'user_code'
+            }
+          ]
+        }
+      ],
       tableFields: [
         {
           title: '主键',
+          tableAlias: 'T',
           column: 'id'
         }, {
           title: '用户代码',
+          tableAlias: 'T',
           column: 'user_code'
         }, {
           title: '用户姓名',
+          tableAlias: 'T',
           column: 'user_name'
         }, {
           title: '用户电话',
+          tableAlias: 'T',
           column: 'user_phone'
-        }, {
+        },
+        {
           title: '教育经历',
           table: 'user_educations',
+          tableAlias: 'T_0',
           expand: true,
           children: [
             {
               title: '主键',
+              tableAlias: 'T_0',
               column: 'id'
             },
             {
               title: '学历',
+              tableAlias: 'T_0',
               column: 'edu_record'
             },
             {
               title: '学校',
+              tableAlias: 'T_0',
               column: 'edu_school'
             },
             {
               title: '入学时间',
+              tableAlias: 'T_0',
               column: 'begin_date'
             },
             {
               title: '毕业时间',
+              tableAlias: 'T_0',
               column: 'end_date'
             }
           ]
-        }, {
+        },
+        {
           title: '工作经历',
           table: 'user_career',
+          tableAlias: 'T_1',
           expand: true,
           children: [
             {
               title: '主键',
+              tableAlias: 'T_1',
               column: 'id'
             },
             {
               title: '单位',
+              tableAlias: 'T_1',
               column: 'work_unit'
             },
             {
               title: '工作内容',
+              tableAlias: 'T_1',
               column: 'work_content'
             },
             {
               title: '入学时间',
+              tableAlias: 'T_1',
               column: 'begin_date'
             },
             {
               title: '毕业时间',
+              tableAlias: 'T_1',
               column: 'end_date'
             }
           ]
@@ -784,27 +921,31 @@ export default {
           columnName: 'user_name',
           columnDesc: '用户姓名',
           columnSql: 'T.user_name',
+          tableAlias: 'T',
           isStat: false
         },
         {
-          colFormula: 'T1.edu_record',
+          colFormula: 'T_0.edu_record',
           columnName: 'edu_record',
           columnDesc: '学历',
-          columnSql: 'T1.edu_record',
+          columnSql: 'T_0.edu_record',
+          tableAlias: 'T_0',
           isStat: false
         },
         {
-          colFormula: 'T1.edu_school',
+          colFormula: 'T_0.edu_school',
           columnName: 'edu_school',
           columnDesc: '学校',
-          columnSql: 'T1.edu_school',
+          columnSql: 'T_0.edu_school',
+          tableAlias: 'T_0',
           isStat: true
         },
         {
-          colFormula: 'T2.work_unit',
+          colFormula: 'T_1.work_unit',
           columnName: 'work_unit',
           columnDesc: '工作单位',
-          columnSql: 'T2.work_unit',
+          columnSql: 'T_1.work_unit',
+          tableAlias: 'T_1',
           isStat: true
         }
       ],
@@ -933,7 +1074,8 @@ export default {
           filterLogic: '等于',
           filterValue: '张三',
           filterSql: 'T.user_name ="张三"',
-          filterDesc: '用户姓名 = 张三'
+          filterDesc: '用户姓名 = 张三',
+          tableAlias: 'T'
         }
       ],
       filterLogics: [
