@@ -121,7 +121,7 @@
                 删除
               </Button>
               <br/>
-              逻辑表达式：
+              逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
               <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
               <!--<br/>
               <Button :size="Default" type="primary">
@@ -573,11 +573,11 @@ export default {
       cruFilter.filterNo = this.filterFields.length + 1
       if (cruFilter.legal) {
         this.filterFields.push(cruFilter)
-        this.clearCurrentFilterOpt()
         if (this.filterSqlFormula) {
-          this.filterSqlFormula += ' + '
+          this.filterSqlFormula += ' * '
         }
         this.filterSqlFormula += cruFilter.filterNo
+        this.clearCurrentFilterOpt()
       }
     },
     updateFilterSqlEvent (event) {
@@ -587,6 +587,7 @@ export default {
         cruFilter.filterNo = ind
         this.$set(this.filterFields, ind - 1, cruFilter)
         this.currFilterRow._highlight = true
+        this.clearCurrentFilterOpt()
       }
     },
     deleteFilterSqlEvent (event) {
@@ -596,6 +597,27 @@ export default {
         }
         this.filterFields.splice(this.currFilterRow.filterNo - 1, 1)
       }
+      let sqlPieces = this.filterSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+      let sqlSen = ''
+      for (let s in sqlPieces) {
+        if (sqlSen) {
+          sqlSen += ' '
+        }
+        if (/^\d+$/.test(sqlPieces[s].trim())) {
+          let i = Number(sqlPieces[s].trim())
+          if (i > this.currFilterRow.filterNo) {
+            sqlSen += (i - 1)
+          } else if (i === this.currFilterRow.filterNo) {
+            sqlSen += '0'
+          } else {
+            sqlSen += sqlPieces[s]
+          }
+        } else {
+          sqlSen += sqlPieces[s]
+        }
+        // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
+      }
+      this.filterSqlFormula = sqlSen
     }
   },
   data () {
