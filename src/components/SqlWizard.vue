@@ -834,6 +834,39 @@ export default {
           ]
         }
       ],
+      // 返回数据 sqlSentence 为返回的sql语句，selectFields 字段说明，sqlParams 为参数说明
+      sqlSentence: {
+        fieldsSql: '',
+        fromTableSql: '',
+        whereSql: '',
+        groupBySql: '',
+        havingSql: '',
+        orderBySql: '',
+        fullSqlSen: ''
+      },
+      selectFields: [
+        {
+          colFormula: 'T.user_name',
+          columnName: 'user_name',
+          columnDesc: '用户姓名',
+          columnSql: 'T.user_name',
+          tableAlias: 'T',
+          isStat: false
+        }
+      ],
+      sqlParams: [
+        {
+          name: '参数1',
+          code: 'PRM_NO0',
+          defaultValue: '100'
+        },
+        {
+          name: '参数2',
+          code: 'PRM_NO1',
+          defaultValue: '200'
+        }
+      ],
+      // 以下数据分为两类，一类为常量，比如表头信息，一类为运行的中间数据，这些数据都可以不用关心
       logicParamShow: false,
       logicParam2Show: false,
       groupPaneDisable: true,
@@ -841,14 +874,6 @@ export default {
       currFilterRow: {},
       buttonSize: 'default',
       filterSqlFormula: '',
-      sqlSentence: {
-        fieldsSql: '',
-        fromTableSql: '',
-        whereSql: '',
-        groupBySql: '',
-        havingSql: '',
-        orderBySql: ''
-      },
       currentFieldOpt: {
         optType: 'none',
         columnFormula: '',
@@ -925,7 +950,6 @@ export default {
           key: 'columnSql'
         }
       ],
-      selectFields: [],
       optFuncs: [
         {
           label: '无操作',
@@ -1145,18 +1169,6 @@ export default {
         {
           title: '默认值',
           key: 'defaultValue'
-        }
-      ],
-      sqlParams: [
-        {
-          name: '参数1',
-          code: 'PRM_NO0',
-          defaultValue: '100'
-        },
-        {
-          name: '参数2',
-          code: 'PRM_NO1',
-          defaultValue: '200'
         }
       ]
     } // end of return
