@@ -163,7 +163,7 @@
       <TabPane label="分组过滤" :disabled="groupPaneDisable">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Table border ref="havingSelection"
+            <Table border
                    highlight-row
                    :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"
                    @on-current-change="onHavingFieldSelectEvent"
@@ -226,7 +226,7 @@
       <TabPane label="排序设定">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Table border ref="selection"
+            <Table border
                    highlight-row
                    :columns="haveSelectCols" :data="selectFields"
                    @on-current-change="onSortFieldSelectEvent"
@@ -234,7 +234,11 @@
           </Sider>
           <Layout>
             <Content>
-              <Table border ref="selection" :columns="sortedCols" :data="sortedFields"></Table>
+              <Table border
+                     highlight-row
+                     :columns="sortedCols" :data="sortedFields"
+                     @on-current-change="onSortColumnSelectEvent"
+              ></Table>
             </Content>
             <Footer align="left">
               排序字段：
@@ -246,23 +250,23 @@
               </Select>
               <br/>
               <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary">
+                <Button :size="buttonSize" type="primary" @click="moveSortFieldUpEvent">
                   <Icon type="ios-arrow-back" />
                   上移
                 </Button>
-                <Button :size="buttonSize" type="primary">
+                <Button :size="buttonSize" type="primary" @click="moveSortFieldDownEvent">
                   下移
                   <Icon type="ios-arrow-forward" />
                 </Button>
               </ButtonGroup>
               <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary">
+                <Button :size="buttonSize" type="primary" @click="addSortFieldEvent">
                   添加
                 </Button>
-                <Button :size="buttonSize" type="primary">
+                <Button :size="buttonSize" type="primary" @click="updateSortFieldEvent">
                   修改
                 </Button>
-                <Button :size="buttonSize" type="primary">
+                <Button :size="buttonSize" type="primary" @click="deleteSortFieldEvent">
                   删除
                 </Button>
               </ButtonGroup>
@@ -684,33 +688,35 @@ export default {
         this.calcFromTables()
       }
     },
+    removeFilterFromFormula (frormula, filterNo) {
+      let sqlPieces = frormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+      let sqlSen = ''
+      for (let s in sqlPieces) {
+        if (sqlSen) {
+          sqlSen += ' '
+        }
+        if (/^\d+$/.test(sqlPieces[s].trim())) {
+          let i = Number(sqlPieces[s].trim())
+          if (i > filterNo) {
+            sqlSen += (i - 1)
+          } else if (i === filterNo) {
+            sqlSen += '0'
+          } else {
+            sqlSen += sqlPieces[s]
+          }
+        } else {
+          sqlSen += sqlPieces[s]
+        }
+      }
+      return sqlSen
+    },
     deleteFilterSqlEvent (event) {
       if (Object.keys(this.currFilterRow).length !== 0) {
         for (let i = this.currFilterRow.filterNo; i < this.filterFields.length; i++) {
           this.filterFields[i].filterNo = i
         }
         this.filterFields.splice(this.currFilterRow.filterNo - 1, 1)
-        let sqlPieces = this.filterSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
-        let sqlSen = ''
-        for (let s in sqlPieces) {
-          if (sqlSen) {
-            sqlSen += ' '
-          }
-          if (/^\d+$/.test(sqlPieces[s].trim())) {
-            let i = Number(sqlPieces[s].trim())
-            if (i > this.currFilterRow.filterNo) {
-              sqlSen += (i - 1)
-            } else if (i === this.currFilterRow.filterNo) {
-              sqlSen += '0'
-            } else {
-              sqlSen += sqlPieces[s]
-            }
-          } else {
-            sqlSen += sqlPieces[s]
-          }
-          // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
-        }
-        this.filterSqlFormula = sqlSen
+        this.filterSqlFormula = this.removeFilterFromFormula(this.filterSqlFormula, this.currFilterRow.filterNo)
         this.calcFromTables()
       }
     },
@@ -839,33 +845,97 @@ export default {
           this.havingFields[i].filterNo = i
         }
         this.havingFields.splice(this.currHavingRow.filterNo - 1, 1)
-        let sqlPieces = this.havingSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
-        let sqlSen = ''
-        for (let s in sqlPieces) {
-          if (sqlSen) {
-            sqlSen += ' '
-          }
-          if (/^\d+$/.test(sqlPieces[s].trim())) {
-            let i = Number(sqlPieces[s].trim())
-            if (i > this.currHavingRow.filterNo) {
-              sqlSen += (i - 1)
-            } else if (i === this.currHavingRow.filterNo) {
-              sqlSen += '0'
-            } else {
-              sqlSen += sqlPieces[s]
-            }
-          } else {
-            sqlSen += sqlPieces[s]
-          }
-          // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
-        }
-        this.havingSqlFormula = sqlSen
+        this.havingSqlFormula = this.removeFilterFromFormula(this.havingSqlFormula, this.currHavingRow.filterNo)
       }
     },
     onSortFieldSelectEvent (item) {
       if (item) {
         this.sortOpt.sortColumn = item.columnSql
         this.sortOpt.sortColumnDesc = item.columnDesc
+      }
+    },
+    onSortColumnSelectEvent (item) {
+      if (item) {
+        this.sortOpt.sortColumn = item.columnSql
+        this.sortOpt.sortColumnDesc = item.columnDesc
+        this.sortOpt.sortType = item.sortType
+      }
+    },
+    addSortFieldEvent (event) {
+      let ind = -1
+      this.sortedFields.forEach((item, i) => {
+        if (item.columnSql === this.sortOpt.sortColumn) {
+          ind = i
+          return false
+        }
+      })
+      let sortCol = {}
+      sortCol.columnSql = this.sortOpt.sortColumn
+      sortCol.columnDesc = this.sortOpt.sortColumnDesc
+      sortCol.sortType = this.sortOpt.sortType
+      sortCol.sortTypeDesc = this.sortOpt.sortType === 'asc' ? '升序' : '降序'
+      if (ind >= 0) {
+        this.$set(this.sortedFields, ind, sortCol)
+      } else {
+        this.sortedFields.push(sortCol)
+      }
+    },
+    updateSortFieldEvent (event) {
+      let ind = -1
+
+      this.sortedFields.forEach((item, i) => {
+        if (item.columnSql === this.sortOpt.sortColumn) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0) {
+        let sortCol = {}
+        sortCol.columnSql = this.sortOpt.sortColumn
+        sortCol.columnDesc = this.sortOpt.sortColumnDesc
+        sortCol.sortType = this.sortOpt.sortType
+        sortCol.sortTypeDesc = this.sortOpt.sortType === 'asc' ? '升序' : '降序'
+        this.$set(this.sortedFields, ind, sortCol)
+      }
+    },
+    deleteSortFieldEvent (event) {
+      let ind = -1
+      this.sortedFields.forEach((item, i) => {
+        if (item.columnSql === this.sortOpt.sortColumn) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0) {
+        this.sortedFields.splice(ind, 1)
+      }
+    },
+    moveSortFieldUpEvent (event) {
+      let ind = -1
+      this.sortedFields.forEach((item, i) => {
+        if (item.columnSql === this.sortOpt.sortColumn) {
+          ind = i
+          return false
+        }
+      })
+      if (ind > 0) {
+        const temp = this.sortedFields[ind - 1]
+        this.$set(this.sortedFields, ind - 1, this.sortedFields[ind])
+        this.$set(this.sortedFields, ind, temp)
+      }
+    },
+    moveSortFieldDownEvent (event) {
+      let ind = -1
+      this.sortedFields.forEach((item, i) => {
+        if (item.columnSql === this.sortOpt.sortColumn) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0 && ind < this.sortedFields.length - 1) {
+        const temp = this.sortedFields[ind + 1]
+        this.$set(this.sortedFields, ind + 1, this.sortedFields[ind])
+        this.$set(this.sortedFields, ind, temp)
       }
     },
     addParamEvent (event) {
@@ -1333,7 +1403,7 @@ export default {
         },
         {
           title: '排序方式',
-          key: 'sortType'
+          key: 'sortTypeDesc'
         }
       ],
       sortedFields: [],
