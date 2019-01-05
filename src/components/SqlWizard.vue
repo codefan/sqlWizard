@@ -151,61 +151,74 @@
           </Content>
           <Footer align="right">
             表一：
-            <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" />
+            <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" readonly />
             <Select style="width:200px" v-model="joinOpt.joinTypeSql" :label-in-value="true" @on-change="onJoinTypeChangeEvent">
               <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
             </Select>
             表二：
-            <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" />
+            <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" readonly />
           </Footer>
         </Layout>
       </TabPane>
       <TabPane label="分组过滤" :disabled="groupPaneDisable">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Table border :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"></Table>
+            <Table border ref="havingSelection"
+                   highlight-row
+                   :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"
+                   @on-current-change="onHavingFieldSelectEvent"
+            ></Table>
           </Sider>
           <Layout>
             <Content>
-              <Table border ref="selection" :columns="havingCols" :data="havingFields"></Table>
+              <Table border
+                     highlight-row
+                     :columns="havingCols" :data="havingFields"
+                     @on-current-change="(item) => this.currHavingRow = item"
+              ></Table>
             </Content>
             <Footer align="left">
               字段语句：
-              <Input v-model="havingFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" />
+              <Input v-model="havingFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" readonly />
               字段描述：
-              <Input v-model="havingFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
+              <Input v-model="havingFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" readonly />
               <br/>
               逻辑：
-              <Select style="width:200px" v-model="havingFieldOpt.filterLogic" >
+              <Select style="width:200px" v-model="havingFieldOpt.filterLogic" :label-in-value="true"  @on-change="onHavingLogicChangeEvent">
                 <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
               </Select>
               <br/>
-              数值：
-              <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
-                <Select style="width: 70px"> <!--slot="append"-->
+              <div v-show="havingParamShow">
+                {{havingFieldOpt.filterLogic}}：
+                <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+                <Select v-model="havingFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onHavingParamChangeEvent"> <!--slot="append"-->
                   <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-             <!-- </Input>-->
-              <br/>
-              数值2(只有 逻辑为between 时才需要显示)：
-              <Input v-model="havingFieldOpt.logicParam2" placeholder="参数" style="width: auto" />
-                <Select style="width: 70px"> <!--slot="append"-->
+                <!--</Input>-->
+              </div>
+
+              <div v-show="havingParam2Show">
+                and：
+                <Input v-model="havingFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
+                <Select v-model="havingFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onHavingParam2ChangeEvent"> <!--slot="append"-->
                   <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
                 </Select>
-              <!--</Input>-->
+                <!-- </Input>-->
+              </div>
+
               <br/>
-              <Button :size="buttonSize" type="primary">
+              <Button :size="buttonSize" type="primary" @click="addHavingSqlEvent">
                 添加
               </Button>
-              <Button :size="buttonSize" type="primary">
+              <Button :size="buttonSize" type="primary" @click="updateHavingSqlEvent">
                 修改
               </Button>
-              <Button :size="buttonSize" type="primary">
+              <Button :size="buttonSize" type="primary" @click="deleteHavingSqlEvent">
                 删除
               </Button>
               <br/>
-              逻辑表达式：
-              <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
+              逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
+              <Input v-model="havingSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
             </Footer>
           </Layout>
         </Layout>
@@ -213,9 +226,11 @@
       <TabPane label="排序设定">
         <Layout>
           <Sider style="background: #fff;" hide-trigger>
-            <Sider style="background: #fff;" hide-trigger>
-              <Table border ref="selection" :columns="haveSelectCols" :data="selectFields"></Table>
-            </Sider>
+            <Table border ref="selection"
+                   highlight-row
+                   :columns="haveSelectCols" :data="selectFields"
+                   @on-current-change="onSortFieldSelectEvent"
+            ></Table>
           </Sider>
           <Layout>
             <Content>
@@ -223,7 +238,7 @@
             </Content>
             <Footer align="left">
               排序字段：
-              <Input v-model="sortOpt.sortColumnDesc" prefix="ios-contact" placeholder="排序字段" style="width: auto" />
+              <Input v-model="sortOpt.sortColumnDesc" placeholder="排序字段" style="width: auto" readonly />
               排序方式：
               <Select style="width:200px" v-model="sortOpt.sortType" >
                 <Option value="asc">升序</Option>
@@ -258,20 +273,22 @@
       <TabPane label="参数管理">
         <Layout>
           <Content>
-            <Table border ref="selection" :columns="paramsCols" :data="sqlParams"></Table>
+            <Table border highlight-row :columns="paramsCols" :data="sqlParams"></Table>
           </Content>
           <Footer align="right">
+            参数名：
+            <Input v-model="paramOpt.paramCode" placeholder="参数名" style="width: auto" />
             参数描述：
-            <Input v-model="paramOpt.paramName" placeholder="参数内容描述" style="width: auto" />
+            <Input v-model="paramOpt.paramName" placeholder="参数中文描述" style="width: auto" />
             默认值：
             <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
-            <Button :size="buttonSize" type="primary">
+            <Button :size="buttonSize" type="primary" @click="addParamEvent">
               添加
             </Button>
-            <Button :size="buttonSize" type="primary">
+            <Button :size="buttonSize" type="primary" @click="updateParamEvent">
               修改
             </Button>
-            <Button :size="buttonSize" type="primary">
+            <Button :size="buttonSize" type="primary" @click="deleteParamEvent">
               删除
             </Button>
           </Footer>
@@ -575,16 +592,8 @@ export default {
             return false
           }
         })
-        if (params === 0) {
-          this.logicParamShow = false
-          this.logicParam2Show = false
-        } else if (params === 2) {
-          this.logicParamShow = true
-          this.logicParam2Show = true
-        } else {
-          this.logicParamShow = true
-          this.logicParam2Show = false
-        }
+        this.logicParamShow = params > 0
+        this.logicParam2Show = params > 1
       }
     },
     onFilterParamChangeEvent (item) {
@@ -717,6 +726,156 @@ export default {
           }
         }
       }
+    },
+    onHavingFieldSelectEvent (item) {
+      if (item) {
+        this.havingFieldOpt.fieldSql = item.columnSql
+        this.havingFieldOpt.fieldDesc = item.columnDesc
+      }
+    },
+    onHavingLogicChangeEvent (item) {
+      if (item !== undefined) {
+        let params = 1
+        this.havingFieldOpt.logicDesc = item.label
+        this.filterLogics.forEach(logic => {
+          if (item.value === logic.value) {
+            params = logic.params
+            return false
+          }
+        })
+        this.havingParamShow = params > 0
+        this.havingParam2Show = params > 1
+      }
+    },
+    onHavingParamChangeEvent (item) {
+      if (item !== undefined) {
+        this.havingFieldOpt.logicParam = ':' + item.value
+        this.havingFieldOpt.logicParamDesc = item.label
+      }
+    },
+    onHavingParam2ChangeEvent (item) {
+      if (item !== undefined) {
+        this.havingFieldOpt.logicParam2 = ':' + item.value
+        this.havingFieldOpt.logicParam2Desc = item.label
+      }
+    },
+    makeHavingSqlValue () {
+      let cruFilter = {}
+      cruFilter.legal = this.havingFieldOpt.fieldSql && this.havingFieldOpt.filterLogic
+      cruFilter.filterColumn = this.havingFieldOpt.fieldSql
+      cruFilter.tableAlias = this.havingFieldOpt.tableAlias
+      cruFilter.filterLogic = this.havingFieldOpt.logicDesc
+      cruFilter.filterValue = this.havingFieldOpt.logicParamDesc || this.havingFieldOpt.logicParam
+      if (this.havingFieldOpt.logicParam2) {
+        cruFilter.filterValue += ',' + (this.havingFieldOpt.logicParam2Desc || this.havingFieldOpt.logicParam2)
+      }
+
+      let params = 1
+      this.filterLogics.forEach(logic => {
+        if (this.havingFieldOpt.filterLogic === logic.value) {
+          params = logic.params
+          return false
+        }
+      })
+      if (params === 0) {
+        cruFilter.filterValue = '--'
+        cruFilter.filterSql = this.havingFieldOpt.fieldSql + this.havingFieldOpt.filterLogic
+        cruFilter.filterDesc = this.havingFieldOpt.fieldDesc + this.havingFieldOpt.logicDesc
+      } else if (params === 2) { // 目前只有 between
+        if (!this.havingFieldOpt.logicParam || !this.havingFieldOpt.logicParam2) {
+          cruFilter.legal = false
+        }
+        cruFilter.filterSql = this.havingFieldOpt.fieldSql + ' between ' + this.havingFieldOpt.logicParam + ' and ' + this.havingFieldOpt.logicParam2
+        cruFilter.filterDesc = this.havingFieldOpt.fieldDesc + ' 介于 ' + (this.havingFieldOpt.logicParamDesc || this.havingFieldOpt.logicParam) +
+          ' 和 ' + (this.havingFieldOpt.logicParam2Desc || this.havingFieldOpt.logicParam2) + ' 之间'
+      } else {
+        if (!this.havingFieldOpt.logicParam) {
+          cruFilter.legal = false
+        }
+        if (this.havingFieldOpt.filterLogic === 'in()') {
+          cruFilter.filterSql = this.havingFieldOpt.fieldSql + ' in (' + this.havingFieldOpt.logicParam + ')'
+        } else {
+          cruFilter.filterSql = this.havingFieldOpt.fieldSql + this.havingFieldOpt.filterLogic + this.havingFieldOpt.logicParam
+        }
+        cruFilter.filterDesc = this.havingFieldOpt.fieldDesc + this.havingFieldOpt.logicDesc + (this.havingFieldOpt.logicParamDesc || this.havingFieldOpt.logicParam)
+      }
+      return cruFilter
+    },
+    clearCurrentHavingOpt () {
+      this.havingFieldOpt.optType = 'none'
+      this.havingFieldOpt.fieldSql = ''
+      this.havingFieldOpt.filterLogic = ''
+      this.havingFieldOpt.logicParam = ''
+      this.havingFieldOpt.logicParam2 = ''
+      this.havingFieldOpt.logicParamSel = ''
+      this.havingFieldOpt.logicParam2Sel = ''
+      this.havingFieldOpt.fieldDesc = ''
+    },
+    addHavingSqlEvent (event) {
+      let cruFilter = this.makeHavingSqlValue()
+      cruFilter.filterNo = this.havingFields.length + 1
+      if (cruFilter.legal) {
+        this.havingFields.push(cruFilter)
+        if (this.havingSqlFormula) {
+          this.havingSqlFormula += ' * '
+        }
+        this.havingSqlFormula += cruFilter.filterNo
+        this.clearCurrentHavingOpt()
+      }
+    },
+    updateHavingSqlEvent (event) {
+      let ind = this.currHavingRow.filterNo
+      let cruFilter = this.makeHavingSqlValue()
+      if (cruFilter.legal) {
+        cruFilter.filterNo = ind
+        this.$set(this.havingFields, ind - 1, cruFilter)
+        this.currHavingRow._highlight = true
+        this.clearCurrentHavingOpt()
+      }
+    },
+    deleteHavingSqlEvent (event) {
+      if (Object.keys(this.currHavingRow).length !== 0) {
+        for (let i = this.currHavingRow.filterNo; i < this.havingFields.length; i++) {
+          this.havingFields[i].filterNo = i
+        }
+        this.havingFields.splice(this.currHavingRow.filterNo - 1, 1)
+        let sqlPieces = this.havingSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+        let sqlSen = ''
+        for (let s in sqlPieces) {
+          if (sqlSen) {
+            sqlSen += ' '
+          }
+          if (/^\d+$/.test(sqlPieces[s].trim())) {
+            let i = Number(sqlPieces[s].trim())
+            if (i > this.currHavingRow.filterNo) {
+              sqlSen += (i - 1)
+            } else if (i === this.currHavingRow.filterNo) {
+              sqlSen += '0'
+            } else {
+              sqlSen += sqlPieces[s]
+            }
+          } else {
+            sqlSen += sqlPieces[s]
+          }
+          // cruField.columnSql = cruField.columnSql.replace(i + 1, this.selectFields[i].columnSql)
+        }
+        this.havingSqlFormula = sqlSen
+      }
+    },
+    onSortFieldSelectEvent (item) {
+      if (item) {
+        this.sortOpt.sortColumn = item.columnSql
+        this.sortOpt.sortColumnDesc = item.columnDesc
+      }
+    },
+    addParamEvent (event) {
+
+    },
+    updateParamEvent (event) {
+
+    },
+    deleteParamEvent (event) {
+
     }
   },
   data () {
@@ -874,11 +1033,15 @@ export default {
       // 以下数据分为两类，一类为常量，比如表头信息，一类为运行的中间数据，这些数据都可以不用关心
       logicParamShow: false,
       logicParam2Show: false,
+      havingParamShow: false,
+      havingParam2Show: false,
       groupPaneDisable: true,
       currSelectRow: {},
       currFilterRow: {},
+      currHavingRow: {},
       buttonSize: 'default',
       filterSqlFormula: '',
+      havingSqlFormula: '',
       currentFieldOpt: {
         optType: 'none',
         columnFormula: '',
@@ -915,11 +1078,13 @@ export default {
         fieldDesc: '',
         filterLogic: '',
         logicParam: '',
-        logicParam2: ''
+        logicParam2: '',
+        logicParamSel: '',
+        logicParam2Sel: ''
       },
       paramOpt: {
-        paramName: '',
         paramCode: '',
+        paramName: '',
         defaultValue: ''
       },
       haveSelectCols: [
@@ -1173,6 +1338,10 @@ export default {
       ],
       sortedFields: [],
       paramsCols: [
+        {
+          title: '参数名',
+          key: 'code'
+        },
         {
           title: '参数描述',
           key: 'name'
