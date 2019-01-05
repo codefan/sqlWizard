@@ -1117,7 +1117,7 @@ export default {
       res.sqlSen = this.sqlSentence
       res.params = this.sqlParams
       res.fields = this.selectFields
-      this.querySentenceFieldsAndParams = JSON.stringify(res)
+      return res
       */
     }
   },
