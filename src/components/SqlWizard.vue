@@ -1,311 +1,313 @@
 <template>
-  <!--<Tabs label="sqlWizard" type="card" style="height: 100vh;">
-    <TabPane label="查询设计">-->
-    <Tabs type="card" style="height: 100vh;">
-      <TabPane label="选择字段">
-        <Layout>
-          <Sider style="background: #fff;" hide-trigger>
-            <div>
-              <Tree
-                @on-select-change="onTreeItemClick"
-                :data="tableFields"></Tree>
-            </div>
-          </Sider>
-          <Layout>
-            <Content>
-              <Table border ref="fieldSelection" :columns="selectCols" :data="selectFields"
-                     highlight-row
-                     @on-current-change="onSelectFieldSelectEvent"
-              ></Table>
-            </Content>
-            <Footer align="left">
-              数据处理:
-              <br>
-              <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onCurrFieldFuncChangeEvent" >
-                <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
-                <Option value="colOpt" key="colOpt">字段运算</Option>
-              </Select>
-              <br style="margin-bottom:15px;"/>
-                  字段语句：
-                  <Input v-model="currentFieldOpt.columnFormula" placeholder="字段或者字段表达式" style="width: auto" />
-                  别名：
-                  <Input v-model="currentFieldOpt.columnName" placeholder="返回数据字段属性名" style="width: auto" />
-              <br/>
-              字段描述：
-              <Input v-model="currentFieldOpt.columnDesc" placeholder="字段名称，一般用于标识字段内容" style="width: auto" />
-              <br/>
-              <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary" @click="moveSelectFieldUpEvent">
-                  <Icon type="ios-arrow-back" />
-                  上移
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="moveSelectFieldDownEvent">
-                  下移
-                  <Icon type="ios-arrow-forward" />
-                </Button>
-              </ButtonGroup>
-              <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary" @click="addSelectFieldEvent">
-                  添加
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="updateSelectFieldEvent">
-                  修改
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="deleteSelectFieldEvent">
-                  删除
-                </Button>
-              </ButtonGroup>
-            </Footer>
-          </Layout>
-        </Layout>
-      </TabPane>
-      <TabPane label="数据过滤">
-        <Layout>
-          <Sider style="background: #fff;" hide-trigger>
-            <div>
-              <Tree
-                @on-select-change="onTreeFilterClick"
-                :data="tableFields"></Tree>
-            </div>
-          </Sider>
-          <Layout>
-            <Content>
-              <Table border :columns="filterCols" :data="filterFields"
-                     highlight-row
-                     @on-current-change="(item) => this.currFilterRow = item"
-              ></Table>
-            </Content>
-            <Footer align="left">
-              数据处理:
-              <Select style="width:200px" v-model="filterFieldOpt.optType" :label-in-value="true"  @on-change="onFilterFieldFuncChangeEvent">
-                <Option v-for="item in optFuncs" v-if="! item.isStat" :value="item.value" :key="item.value">{{ item.label }}</Option>
-              </Select>
-              <br style="margin-bottom:15px;"/>
-              字段语句：
-              <Input v-model="filterFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" />
-              字段描述：
-              <Input v-model="filterFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
-              <br/>
-              逻辑：
-              <Select style="width:200px" v-model="filterFieldOpt.filterLogic" :label-in-value="true"  @on-change="onFilterFieldLogicChangeEvent">
-                <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
-              </Select>
-              <br/>
-              <div v-show="logicParamShow">
-                {{filterFieldOpt.filterLogic}}：
-                <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
-                  <Select v-model="filterFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onFilterParamChangeEvent"> <!--slot="append"-->
-                    <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
-                  </Select>
-                <!--</Input>-->
-              </div>
-
-              <div v-show="logicParam2Show">
-                and：
-                <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
-                <Select v-model="filterFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onFilterParam2ChangeEvent"> <!--slot="append"-->
-                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
-                </Select>
-                <!-- </Input>-->
-              </div>
-
-              <Button :size="buttonSize" type="primary" @click="addFilterSqlEvent">
-                添加
-              </Button>
-              <Button :size="buttonSize" type="primary" @click="updateFilterSqlEvent">
-                修改
-              </Button>
-              <Button :size="buttonSize" type="primary" @click="deleteFilterSqlEvent">
-                删除
-              </Button>
-              <br/>
-              逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
-              <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
-              <!--<br/>
-              <Button :size="buttonSize" type="primary">
-                并
-              </Button>
-              <Button :size="buttonSize" type="primary">
-                或
-              </Button>
-              <Button :size="buttonSize" type="primary">
-                （
-              </Button>
-              <Button :size="buttonSize" type="primary">
-                ）
-              </Button>
-              <Button :size="buttonSize" type="primary">
-                取反
-              </Button>-->
-            </Footer>
-          </Layout>
-        </Layout>
-      </TabPane>
-      <TabPane label="关联管理">
+  <Tabs type="card" style="height: 100vh;">
+    <TabPane label="选择字段">
+      <Layout>
+        <Sider style="background: #fff;" hide-trigger>
+          <div>
+            <Tree
+              @on-select-change="onTreeItemClick"
+              :data="tableFields"></Tree>
+          </div>
+        </Sider>
         <Layout>
           <Content>
-            <Table border :columns="tableCols" :data="selectTables"
+            <Table border ref="fieldSelection" :columns="selectCols" :data="selectFields"
                    highlight-row
-                   @on-current-change="(item) => this.joinOpt = item"
+                   @on-current-change="onSelectFieldSelectEvent"
             ></Table>
           </Content>
-          <Footer align="right">
-            表一：
-            <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" readonly />
-            <Select style="width:200px" v-model="joinOpt.joinTypeSql" :label-in-value="true" @on-change="onJoinTypeChangeEvent">
-              <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
+          <Footer align="left">
+            数据处理:
+            <br>
+            <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onCurrFieldFuncChangeEvent" >
+              <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
+              <Option value="colOpt" key="colOpt">字段运算</Option>
             </Select>
-            表二：
-            <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" readonly />
+            <br style="margin-bottom:15px;"/>
+                字段语句：
+                <Input v-model="currentFieldOpt.columnFormula" placeholder="字段或者字段表达式" style="width: auto" />
+                别名：
+                <Input v-model="currentFieldOpt.columnName" placeholder="返回数据字段属性名" style="width: auto" />
+            <br/>
+            字段描述：
+            <Input v-model="currentFieldOpt.columnDesc" placeholder="字段名称，一般用于标识字段内容" style="width: auto" />
+            <br/>
+            <ButtonGroup :size="buttonSize">
+              <Button :size="buttonSize" type="primary" @click="moveSelectFieldUpEvent">
+                <Icon type="ios-arrow-back" />
+                上移
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="moveSelectFieldDownEvent">
+                下移
+                <Icon type="ios-arrow-forward" />
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup :size="buttonSize">
+              <Button :size="buttonSize" type="primary" @click="addSelectFieldEvent">
+                添加
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="updateSelectFieldEvent">
+                修改
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="deleteSelectFieldEvent">
+                删除
+              </Button>
+            </ButtonGroup>
           </Footer>
         </Layout>
-      </TabPane>
-      <TabPane label="分组过滤" :disabled="groupPaneDisable">
-        <Layout>
-          <Sider style="background: #fff;" hide-trigger>
-            <Table border
-                   highlight-row
-                   :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"
-                   @on-current-change="onHavingFieldSelectEvent"
-            ></Table>
-          </Sider>
-          <Layout>
-            <Content>
-              <Table border
-                     highlight-row
-                     :columns="havingCols" :data="havingFields"
-                     @on-current-change="(item) => this.currHavingRow = item"
-              ></Table>
-            </Content>
-            <Footer align="left">
-              字段语句：
-              <Input v-model="havingFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" readonly />
-              字段描述：
-              <Input v-model="havingFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" readonly />
-              <br/>
-              逻辑：
-              <Select style="width:200px" v-model="havingFieldOpt.filterLogic" :label-in-value="true"  @on-change="onHavingLogicChangeEvent">
-                <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
-              </Select>
-              <br/>
-              <div v-show="havingParamShow">
-                {{havingFieldOpt.filterLogic}}：
-                <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
-                <Select v-model="havingFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onHavingParamChangeEvent"> <!--slot="append"-->
-                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
-                </Select>
-                <!--</Input>-->
-              </div>
-
-              <div v-show="havingParam2Show">
-                and：
-                <Input v-model="havingFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
-                <Select v-model="havingFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onHavingParam2ChangeEvent"> <!--slot="append"-->
-                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
-                </Select>
-                <!-- </Input>-->
-              </div>
-
-              <br/>
-              <Button :size="buttonSize" type="primary" @click="addHavingSqlEvent">
-                添加
-              </Button>
-              <Button :size="buttonSize" type="primary" @click="updateHavingSqlEvent">
-                修改
-              </Button>
-              <Button :size="buttonSize" type="primary" @click="deleteHavingSqlEvent">
-                删除
-              </Button>
-              <br/>
-              逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
-              <Input v-model="havingSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
-            </Footer>
-          </Layout>
-        </Layout>
-      </TabPane>
-      <TabPane label="排序设定">
-        <Layout>
-          <Sider style="background: #fff;" hide-trigger>
-            <Table border
-                   highlight-row
-                   :columns="haveSelectCols" :data="selectFields"
-                   @on-current-change="onSortFieldSelectEvent"
-            ></Table>
-          </Sider>
-          <Layout>
-            <Content>
-              <Table border
-                     highlight-row
-                     :columns="sortedCols" :data="sortedFields"
-                     @on-current-change="onSortColumnSelectEvent"
-              ></Table>
-            </Content>
-            <Footer align="left">
-              排序字段：
-              <Input v-model="sortOpt.sortColumnDesc" placeholder="排序字段" style="width: auto" readonly />
-              排序方式：
-              <Select style="width:200px" v-model="sortOpt.sortType" >
-                <Option value="asc">升序</Option>
-                <Option value="desc">降序</Option>
-              </Select>
-              <br/>
-              <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary" @click="moveSortFieldUpEvent">
-                  <Icon type="ios-arrow-back" />
-                  上移
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="moveSortFieldDownEvent">
-                  下移
-                  <Icon type="ios-arrow-forward" />
-                </Button>
-              </ButtonGroup>
-              <ButtonGroup :size="buttonSize">
-                <Button :size="buttonSize" type="primary" @click="addSortFieldEvent">
-                  添加
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="updateSortFieldEvent">
-                  修改
-                </Button>
-                <Button :size="buttonSize" type="primary" @click="deleteSortFieldEvent">
-                  删除
-                </Button>
-              </ButtonGroup>
-            </Footer>
-          </Layout>
-        </Layout>
-      </TabPane>
-      <TabPane label="参数管理">
+      </Layout>
+    </TabPane>
+    <TabPane label="数据过滤">
+      <Layout>
+        <Sider style="background: #fff;" hide-trigger>
+          <div>
+            <Tree
+              @on-select-change="onTreeFilterClick"
+              :data="tableFields"></Tree>
+          </div>
+        </Sider>
         <Layout>
           <Content>
-            <Table border
+            <Table border :columns="filterCols" :data="filterFields"
                    highlight-row
-                   :columns="paramsCols" :data="sqlParams"
-                   @on-current-change="(item) => this.paramOpt = item"
+                   @on-current-change="(item) => this.currFilterRow = item"
             ></Table>
           </Content>
-          <Footer align="right">
-            参数名：
-            <Input v-model="paramOpt.code" placeholder="参数名" style="width: auto" />
-            参数描述：
-            <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
-            默认值：
-            <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
-            <Button :size="buttonSize" type="primary" @click="addParamEvent">
+          <Footer align="left">
+            数据处理:
+            <Select style="width:200px" v-model="filterFieldOpt.optType" :label-in-value="true"  @on-change="onFilterFieldFuncChangeEvent">
+              <Option v-for="item in optFuncs" v-if="! item.isStat" :value="item.value" :key="item.value">{{ item.label }}</Option>
+            </Select>
+            <br style="margin-bottom:15px;"/>
+            字段语句：
+            <Input v-model="filterFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" />
+            字段描述：
+            <Input v-model="filterFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
+            <br/>
+            逻辑：
+            <Select style="width:200px" v-model="filterFieldOpt.filterLogic" :label-in-value="true"  @on-change="onFilterFieldLogicChangeEvent">
+              <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
+            </Select>
+            <br/>
+            <div v-show="logicParamShow">
+              {{filterFieldOpt.filterLogic}}：
+              <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+                <Select v-model="filterFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onFilterParamChangeEvent"> <!--slot="append"-->
+                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                </Select>
+              <!--</Input>-->
+            </div>
+
+            <div v-show="logicParam2Show">
+              and：
+              <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
+              <Select v-model="filterFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onFilterParam2ChangeEvent"> <!--slot="append"-->
+                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+              </Select>
+              <!-- </Input>-->
+            </div>
+
+            <Button :size="buttonSize" type="primary" @click="addFilterSqlEvent">
               添加
             </Button>
-            <Button :size="buttonSize" type="primary" @click="updateParamEvent">
+            <Button :size="buttonSize" type="primary" @click="updateFilterSqlEvent">
               修改
             </Button>
-            <Button :size="buttonSize" type="primary" @click="deleteParamEvent">
+            <Button :size="buttonSize" type="primary" @click="deleteFilterSqlEvent">
               删除
             </Button>
+            <br/>
+            逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
+            <Input v-model="filterSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
+            <!--<br/>
+            <Button :size="buttonSize" type="primary">
+              并
+            </Button>
+            <Button :size="buttonSize" type="primary">
+              或
+            </Button>
+            <Button :size="buttonSize" type="primary">
+              （
+            </Button>
+            <Button :size="buttonSize" type="primary">
+              ）
+            </Button>
+            <Button :size="buttonSize" type="primary">
+              取反
+            </Button>-->
           </Footer>
         </Layout>
-      </TabPane>
-    </Tabs>
-  <!--</TabPane>
-    <TabPane label="示例数据">示例数据</TabPane>
-  </Tabs>-->
+      </Layout>
+    </TabPane>
+    <TabPane label="关联管理">
+      <Layout>
+        <Content>
+          <Table border :columns="tableCols" :data="selectTables"
+                 highlight-row
+                 @on-current-change="(item) => this.joinOpt = item"
+          ></Table>
+        </Content>
+        <Footer align="right">
+          表一：
+          <Input v-model="joinOpt.leftTable" placeholder="主表" style="width: auto" readonly />
+          <Select style="width:200px" v-model="joinOpt.joinTypeSql" :label-in-value="true" @on-change="onJoinTypeChangeEvent">
+            <Option v-for="item in joinTypes" :value="item.value" :key="item.value">{{ item.label }}</Option>
+          </Select>
+          表二：
+          <Input v-model="joinOpt.rightTable" placeholder="从表" style="width: auto" readonly />
+        </Footer>
+      </Layout>
+    </TabPane>
+    <TabPane label="分组过滤" :disabled="groupPaneDisable">
+      <Layout>
+        <Sider style="background: #fff;" hide-trigger>
+          <Table border
+                 highlight-row
+                 :columns="haveSelectCols" :data="selectFields.filter(n => n.isStat)"
+                 @on-current-change="onHavingFieldSelectEvent"
+          ></Table>
+        </Sider>
+        <Layout>
+          <Content>
+            <Table border
+                   highlight-row
+                   :columns="havingCols" :data="havingFields"
+                   @on-current-change="(item) => this.currHavingRow = item"
+            ></Table>
+          </Content>
+          <Footer align="left">
+            字段语句：
+            <Input v-model="havingFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" readonly />
+            字段描述：
+            <Input v-model="havingFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" readonly />
+            <br/>
+            逻辑：
+            <Select style="width:200px" v-model="havingFieldOpt.filterLogic" :label-in-value="true"  @on-change="onHavingLogicChangeEvent">
+              <Option v-for="item in filterLogics" :value="item.value" :key="item.value">{{ item.label }}</Option>
+            </Select>
+            <br/>
+            <div v-show="havingParamShow">
+              {{havingFieldOpt.filterLogic}}：
+              <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
+              <Select v-model="havingFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onHavingParamChangeEvent"> <!--slot="append"-->
+                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+              </Select>
+              <!--</Input>-->
+            </div>
+
+            <div v-show="havingParam2Show">
+              and：
+              <Input v-model="havingFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
+              <Select v-model="havingFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onHavingParam2ChangeEvent"> <!--slot="append"-->
+                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+              </Select>
+              <!-- </Input>-->
+            </div>
+
+            <br/>
+            <Button :size="buttonSize" type="primary" @click="addHavingSqlEvent">
+              添加
+            </Button>
+            <Button :size="buttonSize" type="primary" @click="updateHavingSqlEvent">
+              修改
+            </Button>
+            <Button :size="buttonSize" type="primary" @click="deleteHavingSqlEvent">
+              删除
+            </Button>
+            <br/>
+            逻辑表达式，序号待办上面列表中的条件,如果不在范围内表已删除的条件，需要移除;’*‘表示and'+'表示or，还可以使用'('和')'：
+            <Input v-model="havingSqlFormula" type="textarea" :rows="2" placeholder="序号表示上面表格中对应的语句，+ 表示或 * 表示并" />
+          </Footer>
+        </Layout>
+      </Layout>
+    </TabPane>
+    <TabPane label="排序设定">
+      <Layout>
+        <Sider style="background: #fff;" hide-trigger>
+          <Table border
+                 highlight-row
+                 :columns="haveSelectCols" :data="selectFields"
+                 @on-current-change="onSortFieldSelectEvent"
+          ></Table>
+        </Sider>
+        <Layout>
+          <Content>
+            <Table border
+                   highlight-row
+                   :columns="sortedCols" :data="sortedFields"
+                   @on-current-change="onSortColumnSelectEvent"
+            ></Table>
+          </Content>
+          <Footer align="left">
+            排序字段：
+            <Input v-model="sortOpt.sortColumnDesc" placeholder="排序字段" style="width: auto" readonly />
+            排序方式：
+            <Select style="width:200px" v-model="sortOpt.sortType" >
+              <Option value="asc">升序</Option>
+              <Option value="desc">降序</Option>
+            </Select>
+            <br/>
+            <ButtonGroup :size="buttonSize">
+              <Button :size="buttonSize" type="primary" @click="moveSortFieldUpEvent">
+                <Icon type="ios-arrow-back" />
+                上移
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="moveSortFieldDownEvent">
+                下移
+                <Icon type="ios-arrow-forward" />
+              </Button>
+            </ButtonGroup>
+            <ButtonGroup :size="buttonSize">
+              <Button :size="buttonSize" type="primary" @click="addSortFieldEvent">
+                添加
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="updateSortFieldEvent">
+                修改
+              </Button>
+              <Button :size="buttonSize" type="primary" @click="deleteSortFieldEvent">
+                删除
+              </Button>
+            </ButtonGroup>
+          </Footer>
+        </Layout>
+      </Layout>
+    </TabPane>
+    <TabPane label="参数管理">
+      <Layout>
+        <Content>
+          <Table border
+                 highlight-row
+                 :columns="paramsCols" :data="sqlParams"
+                 @on-current-change="(item) => this.paramOpt = item"
+          ></Table>
+        </Content>
+        <Footer align="right">
+          参数名：
+          <Input v-model="paramOpt.code" placeholder="参数名" style="width: auto" />
+          参数描述：
+          <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
+          默认值：
+          <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
+          <Button :size="buttonSize" type="primary" @click="addParamEvent">
+            添加
+          </Button>
+          <Button :size="buttonSize" type="primary" @click="updateParamEvent">
+            修改
+          </Button>
+          <Button :size="buttonSize" type="primary" @click="deleteParamEvent">
+            删除
+          </Button>
+        </Footer>
+      </Layout>
+    </TabPane>
+    <TabPane label="结果展示*">
+      <Button :size="buttonSize" type="primary" @click="makeQueryResultEvent">
+        生成结果
+      </Button>
+      <br/>
+      <Input v-model="sqlSentence.fullSqlSen" type="textarea" :rows="20" readonly />
+    </TabPane>
+  </Tabs>
 </template>
 
 <script>
@@ -995,6 +997,128 @@ export default {
       if (ind >= 0) {
         this.sqlParams.splice(ind, 1)
       }
+    },
+    makeQueryResultEvent (event) {
+      this.sqlSentence.fieldsSql = ''
+      let indCount = 0
+      this.selectFields.forEach(item => {
+        if (indCount > 0) {
+          this.sqlSentence.fieldsSql += ', '
+        }
+        this.sqlSentence.fieldsSql += item.columnSql
+        let i = item.columnSql.lastIndexOf('.')
+        if (item.columnSql.substr(i + 1) !== item.columnName) {
+          this.sqlSentence.fieldsSql += ' as ' + item.columnName
+        }
+        indCount++
+      })
+
+      this.sqlSentence.fromTableSql = ''
+      this.selectTables.forEach(tab => {
+        if (tab.joinTypeSql) {
+          this.sqlSentence.fromTableSql += ' ' + tab.joinTypeSql +
+            ' ' + tab.rightTableCode + ' on ('
+          let colCount = 0
+          tab.joinColumns.forEach(colMap => {
+            if (colCount > 0) {
+              this.sqlSentence.fromTableSql += ' and '
+            }
+            this.sqlSentence.fromTableSql += tab.leftTableCode + '.' +
+              colMap.leftColumn + ' = ' + tab.tableAlias + '.' +
+              colMap.rightColumn
+            colCount++
+          })
+          this.sqlSentence.fromTableSql += ')'
+        } else {
+          this.sqlSentence.fromTableSql += ' ' + tab.rightTableCode
+        }
+      })
+
+      let sqlPieces = this.filterSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+      let sqlSen = ''
+      for (let s in sqlPieces) {
+        if (/^\d+$/.test(sqlPieces[s].trim())) {
+          let i = Number(sqlPieces[s].trim())
+          if (i > 0 && i <= this.filterFields.length) {
+            sqlSen += this.filterFields[i - 1].filterSql
+          } else {
+            sqlSen += ' 1 = 1'
+          }
+        } else if (sqlPieces[s].trim() === '*') {
+          sqlSen += ' and'
+        } else if (sqlPieces[s].trim() === '+') {
+          sqlSen += ' or'
+        } else {
+          sqlSen += sqlPieces[s]
+        }
+      }
+      this.sqlSentence.whereSql = sqlSen
+      this.sqlSentence.groupBySql = ''
+      this.sqlSentence.havingSql = ''
+      if (!this.groupPaneDisable) {
+        indCount = 0
+        this.selectFields.forEach(item => {
+          if (!item.isStat) {
+            if (indCount > 0) {
+              this.sqlSentence.havingSql += ', '
+            }
+            this.sqlSentence.havingSql += item.columnSql
+            indCount++
+          }
+        })
+        sqlSen = ''
+        sqlPieces = this.havingSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
+        for (let s in sqlPieces) {
+          if (/^\d+$/.test(sqlPieces[s].trim())) {
+            let i = Number(sqlPieces[s].trim())
+            if (i > 0 && i <= this.havingFields.length) {
+              sqlSen += this.havingFields[i - 1].filterSql
+            } else {
+              sqlSen += ' 1 = 1'
+            }
+          } else if (sqlPieces[s].trim() === '*') {
+            sqlSen += ' and'
+          } else if (sqlPieces[s].trim() === '+') {
+            sqlSen += ' or'
+          } else {
+            sqlSen += sqlPieces[s]
+          }
+        }
+        this.sqlSentence.havingSql = sqlSen
+      }
+      this.sqlSentence.orderBySql = ''
+      indCount = 0
+      this.sortedFields.forEach(sf => {
+        if (indCount > 0) {
+          this.sqlSentence.orderBySql += ', '
+        }
+        this.sqlSentence.orderBySql += sf.columnSql
+        if (sf.sortType === 'desc') {
+          this.sqlSentence.orderBySql += ' desc'
+        }
+        indCount++
+      })
+      this.sqlSentence.fullSqlSen = 'select ' + this.sqlSentence.fieldsSql +
+        ' from ' + this.sqlSentence.fromTableSql
+      if (this.sqlSentence.whereSql) {
+        this.sqlSentence.fullSqlSen += ' where ' + this.sqlSentence.whereSql
+      }
+      if (this.sqlSentence.groupBySql) {
+        this.sqlSentence.fullSqlSen += ' group by ' + this.sqlSentence.groupBySql
+      }
+      if (this.sqlSentence.havingSql) {
+        this.sqlSentence.fullSqlSen += ' having ' + this.sqlSentence.havingSql
+      }
+      if (this.sqlSentence.orderBySql) {
+        this.sqlSentence.fullSqlSen += ' order by ' + this.sqlSentence.orderBySql
+      }
+      /*
+      let res = {}
+      res.sqlSen = this.sqlSentence
+      res.params = this.sqlParams
+      res.fields = this.selectFields
+      this.querySentenceFieldsAndParams = JSON.stringify(res)
+      */
     }
   },
   data () {
@@ -1117,6 +1241,7 @@ export default {
         }
       ],
       // 返回数据 sqlSentence 为返回的sql语句，selectFields 字段说明，sqlParams 为参数说明
+      // querySentenceFieldsAndParams: '',
       sqlSentence: {
         fieldsSql: '',
         fromTableSql: '',
@@ -1126,17 +1251,7 @@ export default {
         orderBySql: '',
         fullSqlSen: ''
       },
-      selectFields: [
-        {
-          colNo: 1,
-          colFormula: 'T.user_name',
-          columnName: 'user_name',
-          columnDesc: '用户姓名',
-          columnSql: 'T.user_name',
-          tableAlias: 'T',
-          isStat: false
-        }
-      ],
+      selectFields: [],
       sqlParams: [],
       // 以下数据分为两类，一类为常量，比如表头信息，一类为运行的中间数据，这些数据都可以不用关心
       logicParamShow: false,
