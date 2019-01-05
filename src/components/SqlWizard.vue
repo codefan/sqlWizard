@@ -1001,6 +1001,7 @@ export default {
     makeQueryResultEvent (event) {
       this.sqlSentence.fieldsSql = ''
       let indCount = 0
+      /* filter(n => n.selection). */
       this.selectFields.forEach(item => {
         if (indCount > 0) {
           this.sqlSentence.fieldsSql += ', '
@@ -1057,14 +1058,12 @@ export default {
       this.sqlSentence.havingSql = ''
       if (!this.groupPaneDisable) {
         indCount = 0
-        this.selectFields.forEach(item => {
-          if (!item.isStat) {
-            if (indCount > 0) {
-              this.sqlSentence.havingSql += ', '
-            }
-            this.sqlSentence.havingSql += item.columnSql
-            indCount++
+        this.selectFields.filter(n => !n.isStat).forEach(item => {
+          if (indCount > 0) {
+            this.sqlSentence.groupBySql += ', '
           }
+          this.sqlSentence.groupBySql += item.columnSql
+          indCount++
         })
         sqlSen = ''
         sqlPieces = this.havingSqlFormula.replace(/([+*()])/g, '@#$1@#').split('@#').filter(w => w)
