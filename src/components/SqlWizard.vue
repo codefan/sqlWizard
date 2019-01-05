@@ -277,13 +277,17 @@
       <TabPane label="参数管理">
         <Layout>
           <Content>
-            <Table border highlight-row :columns="paramsCols" :data="sqlParams"></Table>
+            <Table border
+                   highlight-row
+                   :columns="paramsCols" :data="sqlParams"
+                   @on-current-change="(item) => this.paramOpt = item"
+            ></Table>
           </Content>
           <Footer align="right">
             参数名：
-            <Input v-model="paramOpt.paramCode" placeholder="参数名" style="width: auto" />
+            <Input v-model="paramOpt.code" placeholder="参数名" style="width: auto" />
             参数描述：
-            <Input v-model="paramOpt.paramName" placeholder="参数中文描述" style="width: auto" />
+            <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
             默认值：
             <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
             <Button :size="buttonSize" type="primary" @click="addParamEvent">
@@ -939,13 +943,58 @@ export default {
       }
     },
     addParamEvent (event) {
-
+      if (!this.paramOpt.code || !this.paramOpt.name || !this.paramOpt.defaultValue) {
+        this.$Message.info('参数名、参数名称、默认值都为必填字段！')
+        return
+      }
+      let prm = {}
+      prm.code = this.paramOpt.code
+      prm.name = this.paramOpt.name
+      prm.defaultValue = this.paramOpt.defaultValue
+      let ind = -1
+      this.sqlParams.forEach((item, i) => {
+        if (item.code === prm.code) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0) {
+        this.$set(this.sqlParams, ind, prm)
+      } else {
+        this.sqlParams.push(prm)
+      }
     },
     updateParamEvent (event) {
-
+      let ind = -1
+      this.sqlParams.forEach((item, i) => {
+        if (item.code === this.paramOpt.code) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0) {
+        if (!this.paramOpt.code || !this.paramOpt.name || !this.paramOpt.defaultValue) {
+          this.$Message.info('参数名、参数名称、默认值都为必填字段！')
+          return
+        }
+        let prm = {}
+        prm.code = this.paramOpt.code
+        prm.name = this.paramOpt.name
+        prm.defaultValue = this.paramOpt.defaultValue
+        this.$set(this.sqlParams, ind, prm)
+      }
     },
     deleteParamEvent (event) {
-
+      let ind = -1
+      this.sqlParams.forEach((item, i) => {
+        if (item.code === this.paramOpt.code) {
+          ind = i
+          return false
+        }
+      })
+      if (ind >= 0) {
+        this.sqlParams.splice(ind, 1)
+      }
     }
   },
   data () {
@@ -1088,18 +1137,7 @@ export default {
           isStat: false
         }
       ],
-      sqlParams: [
-        {
-          name: '参数1',
-          code: 'PRM_NO0',
-          defaultValue: '100'
-        },
-        {
-          name: '参数2',
-          code: 'PRM_NO1',
-          defaultValue: '200'
-        }
-      ],
+      sqlParams: [],
       // 以下数据分为两类，一类为常量，比如表头信息，一类为运行的中间数据，这些数据都可以不用关心
       logicParamShow: false,
       logicParam2Show: false,
