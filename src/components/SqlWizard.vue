@@ -93,7 +93,8 @@
               {{filterFieldOpt.filterLogic}}：
               <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
                 <Select v-model="filterFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onFilterParamChangeEvent"> <!--slot="append"-->
-                  <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                  <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
+                  <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
                 </Select>
               <!--</Input>-->
             </div>
@@ -102,7 +103,8 @@
               and：
               <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
               <Select v-model="filterFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onFilterParam2ChangeEvent"> <!--slot="append"-->
-                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!-- </Input>-->
             </div>
@@ -190,7 +192,8 @@
               {{havingFieldOpt.filterLogic}}：
               <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
               <Select v-model="havingFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onHavingParamChangeEvent"> <!--slot="append"-->
-                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!--</Input>-->
             </div>
@@ -199,7 +202,8 @@
               and：
               <Input v-model="havingFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
               <Select v-model="havingFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onHavingParam2ChangeEvent"> <!--slot="append"-->
-                <Option v-for="item in sqlParams" :value="item.code" :key="item.code">{{ item.name }}</Option>
+                <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!-- </Input>-->
             </div>
@@ -288,6 +292,12 @@
           <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
           默认值：
           <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
+          <Select style="width: 70px" @on-change="onInsideParamChangeEvent"> <!--slot="append"-->
+            <Option value="currentDate()" key="currentDate()">当前时间</Option>
+            <Option value="year()" key="year()">当前年份</Option>
+            <Option value="month()" key="month()">当前月份</Option>
+          </Select>
+          <br/>
           <Button :size="buttonSize" type="primary" @click="addParamEvent">
             添加
           </Button>
@@ -608,13 +618,13 @@ export default {
     },
     onFilterParamChangeEvent (item) {
       if (item !== undefined) {
-        this.filterFieldOpt.logicParam = ':' + item.value
+        this.filterFieldOpt.logicParam = item.value
         this.filterFieldOpt.logicParamDesc = item.label
       }
     },
     onFilterParam2ChangeEvent (item) {
       if (item !== undefined) {
-        this.filterFieldOpt.logicParam2 = ':' + item.value
+        this.filterFieldOpt.logicParam2 = item.value
         this.filterFieldOpt.logicParam2Desc = item.label
       }
     },
@@ -761,13 +771,13 @@ export default {
     },
     onHavingParamChangeEvent (item) {
       if (item !== undefined) {
-        this.havingFieldOpt.logicParam = ':' + item.value
+        this.havingFieldOpt.logicParam = item.value
         this.havingFieldOpt.logicParamDesc = item.label
       }
     },
     onHavingParam2ChangeEvent (item) {
       if (item !== undefined) {
-        this.havingFieldOpt.logicParam2 = ':' + item.value
+        this.havingFieldOpt.logicParam2 = item.value
         this.havingFieldOpt.logicParam2Desc = item.label
       }
     },
@@ -942,6 +952,11 @@ export default {
         const temp = this.sortedFields[ind + 1]
         this.$set(this.sortedFields, ind + 1, this.sortedFields[ind])
         this.$set(this.sortedFields, ind, temp)
+      }
+    },
+    onInsideParamChangeEvent (value) {
+      if (value) {
+        this.paramOpt.defaultValue = value
       }
     },
     addParamEvent (event) {
@@ -1571,6 +1586,17 @@ export default {
         {
           title: '默认值',
           key: 'defaultValue'
+        }
+      ],
+      // 这个函数需要完善，如果做的更精致，在下拉列表中需要匹配数据类型
+      dbInsideFuncs: [
+        {
+          funcName: '当前时间',
+          dataType: 'date',
+          funcs: {
+            oracle: 'sysdate',
+            mySql: 'now()'
+          }
         }
       ]
     } // end of return
