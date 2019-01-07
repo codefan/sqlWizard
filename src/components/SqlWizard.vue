@@ -1,5 +1,39 @@
 <template>
   <Tabs type="card" style="height: 100vh;">
+    <TabPane label="参数设定">
+      <Layout>
+        <Content>
+          <Table border
+                 highlight-row
+                 :columns="paramsCols" :data="sqlParams"
+                 @on-current-change="(item) => this.paramOpt = item"
+          ></Table>
+        </Content>
+        <Footer align="right">
+          参数名：
+          <Input v-model="paramOpt.code" placeholder="参数名" style="width: auto" />
+          参数描述：
+          <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
+          默认值：
+          <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
+          <Select style="width: 70px" @on-change="onInsideParamChangeEvent"> <!--slot="append"-->
+            <Option value="currentDate()" key="currentDate()">当前时间</Option>
+            <Option value="year()" key="year()">当前年份</Option>
+            <Option value="month()" key="month()">当前月份</Option>
+          </Select>
+          <br/>
+          <Button :size="buttonSize" type="primary" @click="addParamEvent">
+            添加
+          </Button>
+          <Button :size="buttonSize" type="primary" @click="updateParamEvent">
+            修改
+          </Button>
+          <Button :size="buttonSize" type="primary" @click="deleteParamEvent">
+            删除
+          </Button>
+        </Footer>
+      </Layout>
+    </TabPane>
     <TabPane label="选择字段">
       <Layout>
         <Sider style="background: #fff;" hide-trigger>
@@ -274,40 +308,6 @@
             </ButtonGroup>
           </Footer>
         </Layout>
-      </Layout>
-    </TabPane>
-    <TabPane label="参数管理">
-      <Layout>
-        <Content>
-          <Table border
-                 highlight-row
-                 :columns="paramsCols" :data="sqlParams"
-                 @on-current-change="(item) => this.paramOpt = item"
-          ></Table>
-        </Content>
-        <Footer align="right">
-          参数名：
-          <Input v-model="paramOpt.code" placeholder="参数名" style="width: auto" />
-          参数描述：
-          <Input v-model="paramOpt.name" placeholder="参数中文描述" style="width: auto" />
-          默认值：
-          <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
-          <Select style="width: 70px" @on-change="onInsideParamChangeEvent"> <!--slot="append"-->
-            <Option value="currentDate()" key="currentDate()">当前时间</Option>
-            <Option value="year()" key="year()">当前年份</Option>
-            <Option value="month()" key="month()">当前月份</Option>
-          </Select>
-          <br/>
-          <Button :size="buttonSize" type="primary" @click="addParamEvent">
-            添加
-          </Button>
-          <Button :size="buttonSize" type="primary" @click="updateParamEvent">
-            修改
-          </Button>
-          <Button :size="buttonSize" type="primary" @click="deleteParamEvent">
-            删除
-          </Button>
-        </Footer>
       </Layout>
     </TabPane>
     <TabPane label="结果展示*">
@@ -1591,7 +1591,7 @@ export default {
       // 这个函数需要完善，如果做的更精致，在下拉列表中需要匹配数据类型
       dbInsideFuncs: [
         {
-          funcName: '当前时间',
+          funcName: '数据库当前时间',
           dataType: 'date',
           funcs: {
             oracle: 'sysdate',
