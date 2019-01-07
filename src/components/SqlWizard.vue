@@ -54,7 +54,7 @@
             数据处理:
             <br>
             <Select style="width:200px" :label-in-value="true" v-model="currentFieldOpt.optType" @on-change="onCurrFieldFuncChangeEvent" >
-              <Option v-for="item in optFuncs" :value="item.value" :key="item.value">{{ item.label }}</Option>
+              <Option v-for="item in optFuncs" :value="item.functions[databaseType]" :key="item.functions[databaseType]">{{ item.label }}</Option>
               <Option value="colOpt" key="colOpt">字段运算</Option>
             </Select>
             <br style="margin-bottom:15px;"/>
@@ -110,7 +110,8 @@
           <Footer align="left">
             数据处理:
             <Select style="width:200px" v-model="filterFieldOpt.optType" :label-in-value="true"  @on-change="onFilterFieldFuncChangeEvent">
-              <Option v-for="item in optFuncs" v-if="! item.isStat" :value="item.value" :key="item.value">{{ item.label }}</Option>
+              <Option v-for="item in optFuncs" v-if="! item.isStat" :value="item.functions[databaseType]"
+                      :key="item.functions[databaseType]">{{ item.label }}</Option>
             </Select>
             <br style="margin-bottom:15px;"/>
             字段语句：
@@ -128,7 +129,7 @@
               <Input v-model="filterFieldOpt.logicParam" placeholder="参数" style="width: auto" />
                 <Select v-model="filterFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onFilterParamChangeEvent"> <!--slot="append"-->
                   <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
-                  <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
+                  <Option v-for="func in dbInsideFuncs" :value="func.functions[databaseType]" :key="func.functions[databaseType]">{{func.funcName }}</Option>
                 </Select>
               <!--</Input>-->
             </div>
@@ -138,7 +139,7 @@
               <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
               <Select v-model="filterFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onFilterParam2ChangeEvent"> <!--slot="append"-->
                 <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
-                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.functions[databaseType]" :key="func.functions[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!-- </Input>-->
             </div>
@@ -227,7 +228,7 @@
               <Input v-model="havingFieldOpt.logicParam" placeholder="参数" style="width: auto" />
               <Select v-model="havingFieldOpt.logicParamSel" style="width: 70px" :label-in-value="true" @on-change="onHavingParamChangeEvent"> <!--slot="append"-->
                 <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
-                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.functions[databaseType]" :key="func.functions[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!--</Input>-->
             </div>
@@ -237,7 +238,7 @@
               <Input v-model="havingFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
               <Select v-model="havingFieldOpt.logicParam2Sel" style="width: 70px" :label-in-value="true" @on-change="onHavingParam2ChangeEvent"> <!--slot="append"-->
                 <Option v-for="item in sqlParams" :value="':' + item.code" :key="':' + item.code">{{ item.name }}</Option>
-                <Option v-for="func in dbInsideFuncs" :value="func.funcs[databaseType]" :key="func.funcs[databaseType]">{{func.funcName }}</Option>
+                <Option v-for="func in dbInsideFuncs" :value="func.functions[databaseType]" :key="func.functions[databaseType]">{{func.funcName }}</Option>
               </Select>
               <!-- </Input>-->
             </div>
@@ -1365,42 +1366,66 @@ export default {
       optFuncs: [
         {
           label: '无操作',
-          value: 'none',
+          functions: {
+            oracle: 'none',
+            mySql: 'none'
+          },
           isStat: false
         },
         {
           label: '大写',
-          value: 'upperCase',
+          functions: {
+            oracle: 'upperCase',
+            mySql: 'upperCase'
+          },
           isStat: false
         },
         {
           label: '小写',
-          value: 'lowerCase',
+          functions: {
+            oracle: 'lowerCase',
+            mySql: 'lowerCase'
+          },
           isStat: false
         },
         {
           label: '取整',
-          value: 'int',
+          functions: {
+            oracle: 'int',
+            mySql: 'int'
+          },
           isStat: false
         },
         {
           label: '求和',
-          value: 'sum',
+          functions: {
+            oracle: 'sum',
+            mySql: 'sum'
+          },
           isStat: true
         },
         {
           label: '计数',
-          value: 'count',
+          functions: {
+            oracle: 'count',
+            mySql: 'count'
+          },
           isStat: true
         },
         {
           label: '平均',
-          value: 'average',
+          functions: {
+            oracle: 'average',
+            mySql: 'average'
+          },
           isStat: true
         },
         {
           label: '方差',
-          value: 'variance',
+          functions: {
+            oracle: 'variance',
+            mySql: 'variance'
+          },
           isStat: true
         }
       ],
@@ -1593,7 +1618,7 @@ export default {
         {
           funcName: '数据库当前时间',
           dataType: 'date',
-          funcs: {
+          functions: {
             oracle: 'sysdate',
             mySql: 'now()'
           }
