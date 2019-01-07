@@ -343,16 +343,17 @@ export default {
       if (this.currentFieldOpt.rawValue === '') {
         return
       }
-      this.currentFieldOpt.columnFormula = item.value + '(' + this.currentFieldOpt.rawValue + ')'
       this.currentFieldOpt.columnDesc = '对 ' + this.currentFieldOpt.rawDesc + ' ' + item.label
       this.currentFieldOpt.isStat = false
-
-      this.optFuncs.forEach(fun => {
-        if (item.value === fun.value) {
-          this.currentFieldOpt.isStat = fun.isStat
-          return false
-        }
-      })
+      if (item.value !== 'colOpt') {
+        this.currentFieldOpt.columnFormula = item.value + '(' + this.currentFieldOpt.rawValue + ')'
+        this.optFuncs.forEach(fun => {
+          if (item.label === fun.label) {
+            this.currentFieldOpt.isStat = fun.isStat
+            return false
+          }
+        })
+      }
     },
     onSelectFieldSelectEvent (item) {
       this.currSelectRow = item
@@ -492,7 +493,6 @@ export default {
         }
       }
       let cruField = this.makeSelectFieldValue()
-      cruField.colNo = this.selectFields.length + 1
       cruField._checked = true
       this.selectFields.push(cruField)
       this.clearCurrentFieldOpt()
@@ -520,7 +520,6 @@ export default {
         }
       }
       let cruField = this.makeSelectFieldValue()
-      cruField.colNo = ind + 1
       cruField._checked = checked
       this.$set(this.selectFields, ind, cruField)
       this.clearCurrentFieldOpt()
@@ -534,9 +533,7 @@ export default {
         for (let i = 0; i < this.selectFields.length; i++) {
           if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
             ind = i
-          }
-          if (ind >= 0 && i > ind) {
-            this.selectFields[i].colNo = i
+            break
           }
         }
         if (ind >= 0) {
@@ -547,7 +544,6 @@ export default {
     },
     moveSelectFieldUpEvent (event) {
       let ind = -1
-
       if (this.currSelectRow) {
         for (let i = 0; i < this.selectFields.length; i++) {
           if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
@@ -566,7 +562,6 @@ export default {
     },
     moveSelectFieldDownEvent (event) {
       let ind = -1
-
       if (this.currSelectRow) {
         for (let i = 0; i < this.selectFields.length; i++) {
           if (this.currSelectRow.columnName === this.selectFields[i].columnName) {
@@ -696,13 +691,15 @@ export default {
     },
     updateFilterSqlEvent (event) {
       let ind = this.currFilterRow.filterNo
-      let cruFilter = this.makeFilterSqlValue()
-      if (cruFilter.legal) {
-        cruFilter.filterNo = ind
-        this.$set(this.filterFields, ind - 1, cruFilter)
-        this.currFilterRow._highlight = true
-        this.clearCurrentFilterOpt()
-        this.calcFromTables()
+      if (ind > 0 && ind <= this.filterFields.length) {
+        let cruFilter = this.makeFilterSqlValue()
+        if (cruFilter.legal) {
+          cruFilter.filterNo = ind
+          this.$set(this.filterFields, ind - 1, cruFilter)
+          this.currFilterRow._highlight = true
+          this.clearCurrentFilterOpt()
+          this.calcFromTables()
+        }
       }
     },
     removeFilterFromFormula (frormula, filterNo) {
@@ -1057,7 +1054,7 @@ export default {
         if (/^\d+$/.test(sqlPieces[s].trim())) {
           let i = Number(sqlPieces[s].trim())
           if (i > 0 && i <= this.filterFields.length) {
-            sqlSen += this.filterFields[i - 1].filterSql
+            sqlSen += ' ' + this.filterFields[i - 1].filterSql
           } else {
             sqlSen += ' 1 = 1'
           }
@@ -1087,7 +1084,7 @@ export default {
           if (/^\d+$/.test(sqlPieces[s].trim())) {
             let i = Number(sqlPieces[s].trim())
             if (i > 0 && i <= this.havingFields.length) {
-              sqlSen += this.havingFields[i - 1].filterSql
+              sqlSen += ' ' + this.havingFields[i - 1].filterSql
             } else {
               sqlSen += ' 1 = 1'
             }
@@ -1343,8 +1340,9 @@ export default {
         },
         {
           title: '序',
-          key: 'colNo',
-          width: 50
+          type: 'index',
+          width: 50,
+          align: 'center'
         },
         {
           title: '字段表达式',
