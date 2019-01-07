@@ -845,12 +845,14 @@ export default {
     },
     updateHavingSqlEvent (event) {
       let ind = this.currHavingRow.filterNo
-      let cruFilter = this.makeHavingSqlValue()
-      if (cruFilter.legal) {
-        cruFilter.filterNo = ind
-        this.$set(this.havingFields, ind - 1, cruFilter)
-        this.currHavingRow._highlight = true
-        this.clearCurrentHavingOpt()
+      if (ind > 0 && ind <= this.havingFields.length) {
+        let cruFilter = this.makeHavingSqlValue()
+        if (cruFilter.legal) {
+          cruFilter.filterNo = ind
+          this.$set(this.havingFields, ind - 1, cruFilter)
+          this.currHavingRow._highlight = true
+          this.clearCurrentHavingOpt()
+        }
       }
     },
     deleteHavingSqlEvent (event) {
