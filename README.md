@@ -2,6 +2,8 @@
 
 > A Vue.js project
 
+[https://codefan.github.io/sqlWizard/](https://codefan.github.io/sqlWizard/)
+
 ## Build Setup
 
 ``` bash
