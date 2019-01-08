@@ -18,6 +18,9 @@
           <Input v-model="paramOpt.defaultValue" placeholder="参数默认值（可以式表达式）" style="width: auto" />
           <Select style="width: 70px" @on-change="onInsideParamChangeEvent"> <!--slot="append"-->
             <Option value="currentDate()" key="currentDate()">当前时间</Option>
+            <Option value="truncdate(currentDate(),'M')" key="truncdate(currentDate(),'M')">当月首日</Option>
+            <Option value="truncdate(currentDate(),'Y')" key="truncdate(currentDate(),'Y')">当年首日</Option>
+            <Option value="truncdate(truncdate(currentDate(),'M') - 10, 'M')" key="truncdate(truncdate(currentDate(),'M') - 10, 'M')">上月首日</Option>
             <Option value="year()" key="year()">当前年份</Option>
             <Option value="month()" key="month()">当前月份</Option>
           </Select>
@@ -58,11 +61,11 @@
               <Option value="colOpt" key="colOpt">字段运算</Option>
             </Select>
             <br style="margin-bottom:15px;"/>
-                字段语句：
-                <Input v-model="currentFieldOpt.columnFormula" placeholder="字段或者字段表达式" style="width: auto" />
-                别名：
-                <Input v-model="currentFieldOpt.columnName" placeholder="返回数据字段属性名" style="width: auto" />
+            字段语句：
+            <Input v-model="currentFieldOpt.columnFormula" placeholder="字段或者字段表达式" style="width: 600px"/>
             <br/>
+            别名：
+            <Input v-model="currentFieldOpt.columnName" placeholder="返回数据字段属性名" style="width: auto" />
             字段描述：
             <Input v-model="currentFieldOpt.columnDesc" placeholder="字段名称，一般用于标识字段内容" style="width: auto" />
             <br/>
@@ -115,9 +118,7 @@
             </Select>
             <br style="margin-bottom:15px;"/>
             字段语句：
-            <Input v-model="filterFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: auto" />
-            字段描述：
-            <Input v-model="filterFieldOpt.fieldDesc" placeholder="字段描述" style="width: auto" />
+            <Input v-model="filterFieldOpt.fieldSql" placeholder="字段或者字段表达式" style="width: 600px" />
             <br/>
             逻辑：
             <Select style="width:200px" v-model="filterFieldOpt.filterLogic" :label-in-value="true"  @on-change="onFilterFieldLogicChangeEvent">
@@ -133,7 +134,6 @@
                 </Select>
               <!--</Input>-->
             </div>
-
             <div v-show="logicParam2Show">
               and：
               <Input v-model="filterFieldOpt.logicParam2" placeholder="参数2" style="width: auto" />
@@ -143,7 +143,9 @@
               </Select>
               <!-- </Input>-->
             </div>
-
+            逻辑表达式描述：
+            <Input v-model="filterFieldOpt.fieldDesc" placeholder="逻辑表达式描述" style="width: 600px" />
+            <br/>
             <Button :size="buttonSize" type="primary" @click="addFilterSqlEvent">
               添加
             </Button>
@@ -242,7 +244,6 @@
               </Select>
               <!-- </Input>-->
             </div>
-
             <br/>
             <Button :size="buttonSize" type="primary" @click="addHavingSqlEvent">
               添加
@@ -337,6 +338,13 @@ export default {
         this.currentFieldOpt.isStat = false
       }
     },
+    mapFuncTemplate (func, value) {
+      if (func.indexOf('$1') >= 0) {
+        return func.replace('$1', value)
+      } else {
+        return func + '(' + value + ')'
+      }
+    },
     onCurrFieldFuncChangeEvent (item) {
       // 需要一个标注输据库类型全局变量，根据不同的数据库拼接不同的函数
       // this.currentFieldOpt.optType = item.value
@@ -346,7 +354,7 @@ export default {
       this.currentFieldOpt.columnDesc = '对 ' + this.currentFieldOpt.rawDesc + ' ' + item.label
       this.currentFieldOpt.isStat = false
       if (item.value !== 'colOpt') {
-        this.currentFieldOpt.columnFormula = item.value + '(' + this.currentFieldOpt.rawValue + ')'
+        this.currentFieldOpt.columnFormula = this.mapFuncTemplate(item.value, this.currentFieldOpt.rawValue)
         this.optFuncs.forEach(fun => {
           if (item.label === fun.label) {
             this.currentFieldOpt.isStat = fun.isStat
@@ -595,7 +603,8 @@ export default {
       if (this.filterFieldOpt.rawValue === '') {
         return
       }
-      this.filterFieldOpt.fieldSql = item.value + '(' + this.filterFieldOpt.rawValue + ')'
+      // 替换
+      this.filterFieldOpt.fieldSql = this.mapFuncTemplate(item.value, this.filterFieldOpt.rawValue)
       this.filterFieldOpt.fieldDesc = '对 ' + this.filterFieldOpt.rawDesc + ' ' + item.label
     },
     onFilterFieldLogicChangeEvent (item) {
@@ -1391,7 +1400,7 @@ export default {
         {
           label: '取整',
           functions: {
-            oracle: 'int',
+            oracle: 'int($1, )',
             mySql: 'int'
           },
           isStat: false
