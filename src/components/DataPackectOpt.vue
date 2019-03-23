@@ -10,22 +10,21 @@ export default {
   name: 'DataPackectOpt',
   methods: {
     findDataSet(packet, dataSetName){
-      let selD = packet.rmdbQueries.filter(a => a.queryName === dataSetName)
+      let selD = packet.dataSets.filter(a => a.dataSetName === dataSetName)
       return selD.length > 0 ? selD[0] : null
     },
     compareTwoDataSet(dataSet, dataSet2, pks){
       dataSet = JSON.parse(JSON.stringify(dataSet))
       dataSet.columns.forEach(a => {
-        if( pks.indexOf(a.propertyName)<0){
-          a.propertyName = a.propertyName+":curr"
+        if( pks.indexOf(a.columnName)<0){
+          a.columnName = a.columnName+":curr"
         }
       })
       dataSet2.columns.forEach(f => {
-        if( pks.indexOf(f.propertyName)<0){
+        if( pks.indexOf(f.columnName)<0){
           dataSet.columns.push({
             columnCode: f.columnCode,
-            propertyName: f.propertyName + ":next",
-            columnName: f.columnName,
+            columnName: f.columnName + ":next",
             dataType: f.dataType,
             isStatData: f.isStatData
           })
@@ -35,11 +34,10 @@ export default {
     joinTwoDataSet(dataSet, dataSet2){
       dataSet = JSON.parse(JSON.stringify(dataSet))
       dataSet2.columns.forEach(f => {
-        let selF = dataSet.columns.filter(a => a.propertyName === f.propertyName)
+        let selF = dataSet.columns.filter(a => a.columnName === f.columnName)
         if(selF < 0){
           dataSet.columns.push({
             columnCode: f.columnCode,
-            propertyName: f.propertyName,
             columnName: f.columnName,
             dataType: f.dataType,
             isStatData: f.isStatData
@@ -49,11 +47,10 @@ export default {
     },
     appendDataSetField(dataSet, fieldNames){
       fieldNames.forEach(f => {
-        let selF = dataSet.columns.filter(a => a.propertyName === f.key)
+        let selF = dataSet.columns.filter(a => a.columnName === f.key)
         if(selF < 0){
           dataSet.columns.push({
             columnCode: a.key,
-            propertyName: a.key,
             columnName: a.key,
             dataType: 'String',
             isStatData: false
@@ -63,13 +60,12 @@ export default {
     },
     createDataSet(dataSetName, dataDesc, fieldNames){
       let dataSet = {
-        queryName: dataSetName,
-        queryDesc: dataDesc,
+        dataSetName: dataSetName,
+        dataSetTitle: dataDesc,
         columns: []
       }
       fieldNames.forEach(a => dataSet.columns.push({
         columnCode: a.key,
-        propertyName: a.key,
         columnName: a.key,
         dataType: 'String',
         isStatData: false
@@ -78,11 +74,11 @@ export default {
     },
 
     updateDataSet(packet, dataSet){
-      let i = packet.rmdbQueries.findIndex(a => a.queryName === dataSet.queryName)
+      let i = packet.dataSets.findIndex(a => a.dataSetName === dataSet.dataSetName)
       if(i<0){
-        packet.rmdbQueries.push(dataSet)
+        packet.dataSets.push(dataSet)
       } else {
-        packet.rmdbQueries.splice(i,1,dataSet)
+        packet.dataSets.splice(i,1,dataSet)
       }
     },
 
@@ -99,8 +95,7 @@ export default {
             dataSet = this.createDataSet(step.target, step.source + ':'+step.operation, step.fieldsMap)
             step.groupBy.forEach(rowH => dataSet.columns.push({
               columnCode: rowH,
-              propertyName:rowH,
-              columnName: rowH,
+              columnName:rowH,
               dataType: 'String',
               isStatData: false
             }))
@@ -113,39 +108,38 @@ export default {
             }
             break;
           case 'join':
+          case 'union':
             dataSet = this.findDataSet(packet, step.source)
             dataSet2 = this.findDataSet(packet, step.source2)
             if(dataSet && dataSet2){
               this.joinTwoDataSet(dataSet, dataSet2)
-              dataSet.queryName = step.target
-              dataSet.queryDesc = step.source+":join"
+              dataSet.dataSetName = step.target
+              dataSet.dataSetTitle = step.source+':'+ step.operation
               this.updateDataSet(packet, dataSet)
             }
             break;
           case 'cross':
             dataSet = {
-              queryName: step.target,
-              queryDesc: step.source+":cross",
+              dataSetName: step.target,
+              dataSetTitle: step.source+":cross",
               columns: []
             }
             step.rowHeader.forEach(rowH => dataSet.columns.push({
               columnCode: rowH,
-              propertyName:rowH,
-              columnName: rowH,
+              columnName:rowH,
               dataType: 'String',
               isStatData: false
             }))
             let colField = step.colHeader.join(':*:')
             dataSet.columns.push({
               columnCode: colField,
-              propertyName:colField,
-              columnName: colField,
+              columnName:colField,
               dataType: 'Number',
               isStatData: true
             })
 
-            dataSet.queryName = step.target
-            dataSet.queryDesc = step.source+":cross",
+            dataSet.dataSetName = step.target
+            dataSet.dataSetTitle = step.source+":cross",
             this.updateDataSet(packet, dataSet)
             break;
           case 'compare':
@@ -154,8 +148,8 @@ export default {
             let pks = step.primaryKey
             if(dataSet && dataSet2){
               this.compareTwoDataSet(dataSet, dataSet2, pks)
-              dataSet.queryName = step.target
-              dataSet.queryDesc = step.source+":compare"
+              dataSet.dataSetName = step.target
+              dataSet.dataSetTitle = step.source+":compare"
               this.updateDataSet(packet, dataSet)
             }
             break;
@@ -176,15 +170,14 @@ export default {
           paramLabel: '',
           paramType: ''
         }],
-        rmdbQueries: [
+        dataSets: [
           {
-            queryId: '',
-            queryName: '',
-            queryDesc: '',
+            dataSetId: '',
+            dataSetName: '',
+            dataSetTitle: '',
             columns: [
               {
                 columnCode: '',
-                propertyName: '',
                 columnName: '',
                 dataType: '',
                 isStatData: false
@@ -255,6 +248,12 @@ export default {
           source2: '',
           target: '',
           primaryKey:['field1','field2']
+        },
+        {
+          operation: 'union',
+          source: '',
+          source2: '',
+          target: '',
         },
         { /*会多一个字段 rmdb_dataset_writer_result*/
           operation: 'persistence',
