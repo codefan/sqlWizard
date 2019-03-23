@@ -78,7 +78,7 @@ export default {
     },
 
     updateDataSet(packet, dataSet){
-      let i = packet.rmdbQueries.findIndex(a => a.queryName === dataSetName)
+      let i = packet.rmdbQueries.findIndex(a => a.queryName === dataSet.queryName)
       if(i<0){
         packet.rmdbQueries.push(dataSet)
       } else {
@@ -118,7 +118,7 @@ export default {
             if(dataSet && dataSet2){
               this.joinTwoDataSet(dataSet, dataSet2)
               dataSet.queryName = step.target
-              dataSet.queryDesc = step.source+":join",
+              dataSet.queryDesc = step.source+":join"
               this.updateDataSet(packet, dataSet)
             }
             break;
@@ -220,7 +220,7 @@ export default {
           source: '',
           target: '',
           groupBy:['field1','field2'],
-          stat: { /*对字段进行统计分析*/
+          fieldsMap: { /*对字段进行统计分析*/
             extField1: 'field1:sum',
             extField2: 'field2:mean',
           }
