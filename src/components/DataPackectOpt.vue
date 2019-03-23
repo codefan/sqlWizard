@@ -66,7 +66,7 @@ export default {
           case 'append':
             let dataSet = this.findDataSet(packet, step.source)
             if(dataSet){
-              this.appendDataSetField(dataSet, step.map)
+              this.appendDataSetField(dataSet, step.fieldsMap)
             }
             break;
         }
