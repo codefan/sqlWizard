@@ -8,7 +8,72 @@
 <script>
 export default {
   name: 'DataPackectOpt',
-  methods: {},
+  methods: {
+    findDataSet(packet, dataSetName){
+      let selD = packet.rmdbQueries.filter(a => a.queryName === dataSetName)
+      return selD.length > 0 ? selD[0] : null
+    },
+
+    appendDataSetField(dataSet, fieldNames){
+      fieldNames.forEach(f => {
+        let selF = dataSet.columns.filter(a => a.propertyName === f.key)
+        if(selF < 0){
+          dataSet.columns.push({
+            columnCode: a.key,
+            propertyName: a.key,
+            columnName: a.key,
+            dataType: 'String',
+            isStatData: false
+          })
+        }
+      })
+    },
+
+    createDataSet(dataSetName, dataDesc,  fieldNames){
+      let dataSet = {
+        queryName: dataSetName,
+        queryDesc: dataDesc,
+        columns: []
+      }
+      fieldNames.forEach(a => dataSet.columns.push({
+        columnCode: a.key,
+        propertyName: a.key,
+        columnName: a.key,
+        dataType: 'String',
+        isStatData: false
+      }))
+      return dateSet;
+    },
+
+    updateDataSet(packet, dataSet){
+      let i = packet.rmdbQueries.findIndex(a => a.queryName === dataSetName)
+      if(i<0){
+        packet.rmdbQueries.push(dataSet)
+      } else {
+        packet.rmdbQueries.splice(i,1,dataSet)
+      }
+    },
+
+    doPacketOpt(packet, steps){
+      steps.forEach(step => {
+        switch (step.operation) {
+          case 'map':
+          case 'stat':
+          case 'analyse':
+            dataSet = this.createDataSet(step.target, step.source + ':map', step.fieldsMap)
+            this.updateDataSet(packet, dataSet)
+            break;
+          case 'append':
+            let dataSet = this.findDataSet(packet, step.source)
+            if(dataSet){
+              this.appendDataSetField(dataSet, step.map)
+            }
+            break;
+        }
+      })
+      return packet;
+    }
+  },
   data () {
     return {
       dataPacket: {
@@ -43,7 +108,7 @@ export default {
           operation: 'map',
           source: '',
           target: '',
-          map: { /*这是一个 Map值，key为新增的字段名，value为旧的字段名的表达式*/
+          fieldsMap: { /*这是一个 Map值，key为新增的字段名，value为旧的字段名的表达式*/
             extField1: 'field1 + fiedl2'
           }
         },
@@ -56,8 +121,7 @@ export default {
         {
           operation: 'append',
           source: '',
-          target: '',
-          map: { /*这是一个 Map值，key为新增的字段名，value为旧的字段名的表达式*/
+          fieldsMap: { /*这是一个 Map值，key为新增的字段名，value为旧的字段名的表达式*/
             extField1: 'field1 + fiedl2'
           }
         },
@@ -77,7 +141,7 @@ export default {
           target: '',
           groupBy:['field1','field2'],
           orderBy:['field3','field4'],
-          analyse: { /*这是一个 Map值，分析函数 :1 表示在同组中向前找，:_1b表示向后找*/
+          fieldsMap: { /*这是一个 Map值，分析函数 :1 表示在同组中向前找，:_1b表示向后找*/
             extField4: '(field4 - fiedl4:1 / field4:1) * 100 + "%"'
           }
         },
@@ -108,7 +172,7 @@ export default {
           databaseCode: '',
           tableName: '',
           writerType: 'merge'
-        },
+        }
       ]
     }
   }
