@@ -13,7 +13,40 @@ export default {
       let selD = packet.rmdbQueries.filter(a => a.queryName === dataSetName)
       return selD.length > 0 ? selD[0] : null
     },
-
+    compareTwoDataSet(dataSet, dataSet2, pks){
+      dataSet = JSON.parse(JSON.stringify(dataSet))
+      dataSet.columns.forEach(a => {
+        if( pks.indexOf(a.propertyName)<0){
+          a.propertyName = a.propertyName+":curr"
+        }
+      })
+      dataSet2.columns.forEach(f => {
+        if( pks.indexOf(f.propertyName)<0){
+          dataSet.columns.push({
+            columnCode: f.columnCode,
+            propertyName: f.propertyName + ":next",
+            columnName: f.columnName,
+            dataType: f.dataType,
+            isStatData: f.isStatData
+          })
+        }
+      })
+    },
+    joinTwoDataSet(dataSet, dataSet2){
+      dataSet = JSON.parse(JSON.stringify(dataSet))
+      dataSet2.columns.forEach(f => {
+        let selF = dataSet.columns.filter(a => a.propertyName === f.propertyName)
+        if(selF < 0){
+          dataSet.columns.push({
+            columnCode: f.columnCode,
+            propertyName: f.propertyName,
+            columnName: f.columnName,
+            dataType: f.dataType,
+            isStatData: f.isStatData
+          })
+        }
+      })
+    },
     appendDataSetField(dataSet, fieldNames){
       fieldNames.forEach(f => {
         let selF = dataSet.columns.filter(a => a.propertyName === f.key)
@@ -28,8 +61,7 @@ export default {
         }
       })
     },
-
-    createDataSet(dataSetName, dataDesc,  fieldNames){
+    createDataSet(dataSetName, dataDesc, fieldNames){
       let dataSet = {
         queryName: dataSetName,
         queryDesc: dataDesc,
@@ -56,17 +88,75 @@ export default {
 
     doPacketOpt(packet, steps){
       steps.forEach(step => {
+        let dataSet, dataSet2
         switch (step.operation) {
           case 'map':
-          case 'stat':
-          case 'analyse':
             dataSet = this.createDataSet(step.target, step.source + ':map', step.fieldsMap)
             this.updateDataSet(packet, dataSet)
             break;
+          case 'stat':
+          case 'analyse':
+            dataSet = this.createDataSet(step.target, step.source + ':'+step.operation, step.fieldsMap)
+            step.groupBy.forEach(rowH => dataSet.columns.push({
+              columnCode: rowH,
+              propertyName:rowH,
+              columnName: rowH,
+              dataType: 'String',
+              isStatData: false
+            }))
+            this.updateDataSet(packet, dataSet)
+            break;
           case 'append':
-            let dataSet = this.findDataSet(packet, step.source)
+            dataSet = this.findDataSet(packet, step.source)
             if(dataSet){
               this.appendDataSetField(dataSet, step.fieldsMap)
+            }
+            break;
+          case 'join':
+            dataSet = this.findDataSet(packet, step.source)
+            dataSet2 = this.findDataSet(packet, step.source2)
+            if(dataSet && dataSet2){
+              this.joinTwoDataSet(dataSet, dataSet2)
+              dataSet.queryName = step.target
+              dataSet.queryDesc = step.source+":join",
+              this.updateDataSet(packet, dataSet)
+            }
+            break;
+          case 'cross':
+            dataSet = {
+              queryName: step.target,
+              queryDesc: step.source+":cross",
+              columns: []
+            }
+            step.rowHeader.forEach(rowH => dataSet.columns.push({
+              columnCode: rowH,
+              propertyName:rowH,
+              columnName: rowH,
+              dataType: 'String',
+              isStatData: false
+            }))
+            let colField = step.colHeader.join(':*:')
+            dataSet.columns.push({
+              columnCode: colField,
+              propertyName:colField,
+              columnName: colField,
+              dataType: 'Number',
+              isStatData: true
+            })
+
+            dataSet.queryName = step.target
+            dataSet.queryDesc = step.source+":cross",
+            this.updateDataSet(packet, dataSet)
+            break;
+          case 'compare':
+            dataSet = this.findDataSet(packet, step.source)
+            dataSet2 = this.findDataSet(packet, step.source2)
+            let pks = step.primaryKey
+            if(dataSet && dataSet2){
+              this.compareTwoDataSet(dataSet, dataSet2, pks)
+              dataSet.queryName = step.target
+              dataSet.queryDesc = step.source+":compare"
+              this.updateDataSet(packet, dataSet)
             }
             break;
         }
