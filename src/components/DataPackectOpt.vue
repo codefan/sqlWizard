@@ -255,6 +255,11 @@ export default {
           source2: '',
           target: '',
         },
+        {
+          operation: 'static',
+          target: '',
+          data:[{},{}]
+        },
         { /*会多一个字段 rmdb_dataset_writer_result*/
           operation: 'persistence',
           source: '',
